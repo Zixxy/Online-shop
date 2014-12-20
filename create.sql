@@ -97,7 +97,7 @@ CREATE TABLE kartoteka_towaru (
 	data_do              date,
 	cena_zakupu_netto    numeric(6,2),
 	cena_sprzedazy_netto numeric(6,2),
-	vat                  numeric(6,2),
+	vat                  int,
 	CONSTRAINT ck_4	 CHECK ( vat in (0, 5, 7, 8, 23)), 
 	CONSTRAINT fk_kartoteka_towaru FOREIGN KEY ( kod_kreskowy ) REFERENCES produkty( kod_kreskowy ),
 	CONSTRAINT pk_kartoteka_towaru PRIMARY KEY ( kod_kreskowy, data_od )
@@ -140,14 +140,15 @@ CREATE INDEX idx_dostawy ON dostawy ( nazwa_dostawcy );
 
 CREATE INDEX idx_kartoteka_towaru ON kartoteka_towaru ( kod_kreskowy );
 
-CREATE INDEX idx_magazyn ON magazyn ( nazwa_dostawcy );
+CREATE INDEX idx_magazyn ON produkty ( nazwa_dostawcy );
 
-CREATE INDEX idx_zamowienia_produkty ON amowienia_produkty ( id_zamowienia );
+CREATE INDEX idx_zamowienia_produkty ON zamowienia_produkty ( id_zamowienia );
 
 CREATE INDEX idx_zamowienia ON zamowienia ( login_klienta );
 
-CREATE INDEX idx_zamowienia_0 ON zamowienia ( adres_zamowienia );
+CREATE INDEX idx_zamowienia_0 ON zamowienia ( adres );
 
+--triggers
 create or replace function hash_passoword() returns trigger as $hash_passoword$
       begin
            if char_length(NEW.haslo) < 6
@@ -160,6 +161,7 @@ $hash_passoword$ language plpgsql;
 
 CREATE TRIGGER insert_password BEFORE INSERT OR UPDATE ON konta_uzytkownicy
 FOR EACH ROW EXECUTE PROCEDURE hash_passoword();
+--functions
 
 CREATE or replace function password_is_correct(varchar, varchar) returns bool 
 as
@@ -168,9 +170,58 @@ $$
 	from konta_uzytkownicy
 	where $1 = konta_uzytkownicy.login;
 $$ language sql;
-------------
 
----------------
+
+CREATE or replace function order_products(int) returns 
+table(nazwa varchar(40),kategoria varchar(40),
+ilosc int, cena_sprzedazy_netto numeric(6,2),
+cena_sprzedazy_brutto numeric(6,2), vat int)
+as
+$$
+	select produkty.nazwa, 
+		produkty.kategoria, 
+		zamowienia_produkty.ilosc,
+		kartoteka_towaru.cena_sprzedazy_netto,
+		kartoteka_towaru.cena_sprzedazy_netto*(100+vat::numeric(6,2)) as cena_sprzedazy_brutto,
+		kartoteka_towaru.vat as "vat"
+	from zamowienia
+	join zamowienia_produkty
+	on zamowienia_produkty.id_zamowienia = zamowienia.id_zamowienia
+	join produkty
+	on zamowienia_produkty.produkt = produkty.kod_kreskowy
+	join kartoteka_towaru
+	on kartoteka_towaru.kod_kreskowy = produkty.kod_kreskowy
+	and kartoteka_towaru.data_do is null --price spaces until now
+	where zamowienia.id_zamowienia = $1;
+$$ language sql;
+
+CREATE or replace function order_details(int) returns table(
+	imie varchar, nazwisko varchar, ulica varchar, miejscowosc varchar, 
+	numer_domu varchar, kod_pocztowy char(6), data_zlozenia date,
+	zrealizowane bool, wartosc_netto numeric(6,2), wartosc_brutto numeric(6,2)
+)
+as
+$$
+	select ku.imie, ku.nazwisko, a.ulica, a.miejscowosc, a.numer_domu, a.kod_pocztowy,
+	z.data_zlozenia,
+	z.zrealizowane, (
+		select 
+			sum(cena_sprzedazy_netto)
+		from order_products($1)
+		) as wartosc_netto, (
+		select
+			sum(cena_sprzedazy_brutto)
+		from order_products($1)
+		) as wartosc_brutto
+	from zamowienia z
+	join konta_uzytkownicy ku
+	on z.login_klienta = ku.login
+	join adresy a
+	on a.id_adres = z.adres
+	where z.id_zamowienia = $1
+$$ language sql;
+--VIEWS
+
 CREATE VIEW  exhibition as
 select 
 	case when nazwa = null
@@ -179,6 +230,24 @@ select
 	else
 		nazwa as nazwa, cena_detaliczna as cena, opis as opis
 from magazyn;
+
+CREATE VIEW payments as
+SELECT
+	dy.nazwa_dostawcy,
+	dy.numer_konta,
+	f.nr_faktury,
+	f.data_wystawienia,
+	f.wartosc_netto,
+	f.wartosc_brutto,
+	f.forma_platnosci
+FROM faktury_zakupow f
+JOIN dostawy d 
+on d.id_dostawy = f.id_dostawy
+JOIN dostawcy dy 
+on d.nazwa_dostawcy = dy.nazwa_dostawcy
+where f.uregulowane; 
+
+
 
 -- CREATE FUNCTION is_number(varchar) returns bool
 -- as $$
@@ -191,9 +260,9 @@ from magazyn;
 -- $$ language plpgsql;
 
 
--- insert into konta_uzytkownicy values
--- 	('user3','proste2haslo1x', 'jana', 'kowalk', null),
--- 	('user4','proste2haslo1y', 'janb', 'kowali', null),
+insert into konta_uzytkownicy values
+('user4','proste2hasleex', 'jana', 'kowalk', null);
+--	('user4','proste2haslo1y', 'janb', 'kowali', null),
 -- 	('user5','proste2haslo1z', 'janc', 'kowala', null),
 -- 	('user6','proste2haslo1r', 'jand', 'kowalb', null),
 -- 	('user7','proste2haslo1q', 'jane', 'kowalc', null),
