@@ -1,12 +1,3 @@
-
-CREATE EXTENSION pgcrypto; --use it as superuser. 
---Do in terminal:
--- 1.sudo apt-get install postgresql-contrib
--- 2.sudo su postgresql
--- 3.psql dbname
--- 4.CREATE EXTENSION pgcrypto;
--- Got it!.
-
 CREATE TYPE formy_platnosci AS ENUM ('sad', 'ok', 'happy');
 
 CREATE TABLE adresy ( 
@@ -42,12 +33,11 @@ CREATE TABLE zamowienia (
 CREATE TABLE faktury_sprzedazy ( 
 	id_zamowienia        int  NOT NULL,
 	nr_faktury 			 varchar(20)  NOT NULL,
-	data_wystawienia     date  NOT NULL DEFAULT now() ,
+	data_wystawienia     date  NOT NULL DEFAULT now(),
 	wartosc_netto        numeric(12,2)  NOT NULL,
 	wartosc_brutto       numeric(12,2)  NOT NULL,
 	forma_platnosci      formy_platnosci NOT NULL,
 	CONSTRAINT pk_faktury_sprzedazy PRIMARY KEY ( id_zamowienia ),
- 	CONSTRAINT ck_1 CHECK ( wartosc_netto <= wartosc_brutto ), -- delete? Neccessary?
  	CONSTRAINT fk_faktury_sprzedazy FOREIGN KEY (id_zamowienia) REFERENCES zamowienia( id_zamowienia )
  );
 
@@ -57,15 +47,14 @@ CREATE TABLE paragon (
 	wartosc_brutto       numeric(12,2)  NOT NULL,
 	forma_platnosci      formy_platnosci NOT NULL,
 	CONSTRAINT pk_paragon PRIMARY KEY ( id_zamowienia ),
-	CONSTRAINT ck_2 CHECK ( wartosc_netto<wartosc_brutto ), -- delete? Neccessary?
 	CONSTRAINT fk_paragon FOREIGN KEY ( id_zamowienia ) REFERENCES zamowienia( id_zamowienia )
  );
 
 CREATE TABLE dostawcy ( 
 	nazwa_dostawcy       varchar(40)  NOT NULL,
-	nip                  char(10) NOT NULL, --todo trigger
+	nip                  char(10) NOT NULL,
 	adres                int  NOT NULL,
-	numer_konta          char(26), --todo trigger
+	numer_konta          char(26),
 	parametry_dostawcy   varchar(100), -- to learn.
 	CONSTRAINT pk_dostawcy PRIMARY KEY ( nazwa_dostawcy ),
 	CONSTRAINT idx_dostawcy UNIQUE ( adres ),
@@ -74,7 +63,6 @@ CREATE TABLE dostawcy (
 
 CREATE TABLE produkty ( 
 	kod_kreskowy         numeric(16),
-	kod_towarowy         varchar(40),
 	nazwa 				 varchar(40),
 	stan_biezacy         int,
 	kategoria      		 varchar(30),
@@ -98,6 +86,7 @@ CREATE TABLE kartoteka_towaru (
 	cena_zakupu_netto    numeric(6,2),
 	cena_sprzedazy_netto numeric(6,2),
 	vat                  int,
+	CONSTRAINT ck_5 CHECK ( cena_zakupu_netto < cena_sprzedazy_netto),
 	CONSTRAINT ck_4	 CHECK ( vat in (0, 5, 7, 8, 23)), 
 	CONSTRAINT fk_kartoteka_towaru FOREIGN KEY ( kod_kreskowy ) REFERENCES produkty( kod_kreskowy ),
 	CONSTRAINT pk_kartoteka_towaru PRIMARY KEY ( kod_kreskowy, data_od )
@@ -117,6 +106,7 @@ CREATE TABLE dostawy_produkty (
 	cena_netto 			 numeric(6,2) NOT NULL,
 	vat					 int,
 	CONSTRAINT ck_3 CHECK ( vat in (0, 5, 7, 8, 23)), 
+	CONSTRAINT ck_6 CHECK ( ilosc > 0), 
 	CONSTRAINT pk_dostawy_produkty PRIMARY KEY ( id_dostawy, kod_produktu ),
 	CONSTRAINT fk_dostawy_produkty FOREIGN KEY ( id_dostawy ) REFERENCES dostawy( id_dostawy ),
 	CONSTRAINT fk_dostawy_produkty_0 FOREIGN KEY ( kod_produktu ) REFERENCES produkty( kod_kreskowy )
@@ -128,7 +118,6 @@ CREATE TABLE faktury_zakupow (
 	data_wystawienia     date  NOT NULL,
 	wartosc_netto        numeric(12,2)  NOT NULL,
 	wartosc_brutto       numeric(12,2)  NOT NULL,
-	forma_platnosci      formy_platnosci NOT NULL,
 	uregulowane			 bool NOT NULL,
 	CONSTRAINT pk_faktury_sprzedazy_0 PRIMARY KEY ( id_dostawy ) ,
 	CONSTRAINT fk_faktury_zakupow FOREIGN KEY ( id_dostawy ) REFERENCES dostawy( id_dostawy ) 
@@ -149,6 +138,36 @@ CREATE INDEX idx_zamowienia ON zamowienia ( login_klienta );
 CREATE INDEX idx_zamowienia_0 ON zamowienia ( adres );
 
 --triggers
+CREATE OR REPLACE function nip_correct() returns trigger as $nip_correct$
+	declare i char;
+	declare k int;
+	declare j int := 0;
+	begin
+		for j in 1..10 loop
+			k = substring(NEW.nip from j for 1)::integer;
+		end loop;
+		return NEW;
+	end
+$nip_correct$ language plpgsql;
+
+CREATE TRIGGER insert_nip BEFORE INSERT OR UPDATE ON dostawcy
+FOR EACH ROW EXECUTE PROCEDURE nip_correct();
+
+CREATE OR REPLACE function numer_konta_correct() returns trigger as $nip_correct$
+	declare i char;
+	declare k int;
+	declare j int := 0;
+	begin
+		for j in 1..26 loop
+			k = substring(NEW.numer_konta from j for 1)::integer;
+		end loop;
+		return NEW;
+	end
+$nip_correct$ language plpgsql;
+
+CREATE TRIGGER insert_numer_konta BEFORE INSERT OR UPDATE ON dostawcy
+FOR EACH ROW EXECUTE PROCEDURE numer_konta_correct();
+
 create or replace function hash_passoword() returns trigger as $hash_passoword$
       begin
            if char_length(NEW.haslo) < 6
@@ -162,7 +181,6 @@ $hash_passoword$ language plpgsql;
 CREATE TRIGGER insert_password BEFORE INSERT OR UPDATE ON konta_uzytkownicy
 FOR EACH ROW EXECUTE PROCEDURE hash_passoword();
 --functions
-
 CREATE or replace function password_is_correct(varchar, varchar) returns bool 
 as
 $$
@@ -220,6 +238,39 @@ $$
 	on a.id_adres = z.adres
 	where z.id_zamowienia = $1
 $$ language sql;
+
+CREATE or REPLACE function add_delivery(varchar, numeric(16)[], int[], numeric(16,2)[], int[],data date,numer_faktury varchar)
+returns void
+as 
+$$
+	declare product_code numeric(16);
+	declare id int;
+	declare iterator int := 1;
+	declare net_value numeric(6,2) := 0;
+	declare gross_value numeric(6,2) := 0;
+	begin
+		if (select nazwa_dostawcy from dostawcy where $1 = nazwa_dostawcy) is NULL
+		then raise exception 'No such provider in database';
+		end if;
+		foreach product_code in ARRAY $2 loop
+			if (select kod_kreskowy from produkty where product_code = kod_kreskowy) is null
+			then raise exception 'No such product in database';
+			end if;
+		end loop;
+		insert into dostawy(nazwa_dostawcy) values
+			($1);
+		select into id currval('dostawy_id_dostawy_seq');
+		foreach product_code in ARRAY $2 loop
+			net_value := net_value + $4[iterator];
+			gross_value := gross_value + $4[iterator]*($5[iterator]::numeric(6,2));
+			insert into dostawy_produkty(id_dostawy, kod_produktu, ilosc, cena_netto) values
+			(id, product_code, $3[iterator], $4[iterator]);
+			iterator := iterator + 1;
+		end loop;
+		insert into faktury_zakupow(id_dostawy, nr_faktury, data_wystawienia, wartosc_netto, wartosc_brutto, uregulowane) values
+		(id, numer_faktury, data, net_value, gross_value, false);
+	end
+$$ language plpgsql;
 --VIEWS
 
 CREATE VIEW  exhibition as
@@ -246,42 +297,3 @@ on d.id_dostawy = f.id_dostawy
 JOIN dostawcy dy 
 on d.nazwa_dostawcy = dy.nazwa_dostawcy
 where f.uregulowane; 
-
-
-
--- CREATE FUNCTION is_number(varchar) returns bool
--- as $$
--- 	declare i char;
--- 	begin 
--- 		foreach i in $1 loop
--- 			if i < 
--- 		end loop;
--- 	end
--- $$ language plpgsql;
-
-
-insert into konta_uzytkownicy values
-('user4','proste2hasleex', 'jana', 'kowalk', null);
---	('user4','proste2haslo1y', 'janb', 'kowali', null),
--- 	('user5','proste2haslo1z', 'janc', 'kowala', null),
--- 	('user6','proste2haslo1r', 'jand', 'kowalb', null),
--- 	('user7','proste2haslo1q', 'jane', 'kowalc', null),
--- 	('user8','proste2haslo1w', 'janf', 'kowald', null),
--- 	('user9','proste2haslo1u', 'jang', 'kowale', null),
--- 	('user10','proste2haslo1i', 'janh', 'kowalf', null),
--- 	('user11','proste2haslo1o', 'jani', 'kowalg', null),
--- 	('user12','proste2haslo1p', 'janj', 'kowalh', null),
--- 	('user13','proste2haslo1a', 'jank', 'kowali', null),
--- 	('user14','proste2haslo1s', 'janl', 'kowalj', null),
--- 	('user15','proste2haslo1d', 'janm', 'kowalk', null);
-
--- insert into firma() values
--- 	("zhu. xyz", '546787987', 1),
--- 	("pffft", "123456789", 2),
--- 	("wielka company","987654321", 3);
-
--- insert into adresy(ulica, miejscowosc, lokal, dom, kod_pocztowy) values
--- 	('czerwona', 'zalesie', '3c', '34-447'),
--- 	('zielonaa', 'przedlesie', '33', '34-448'),
--- 	('czerwona', 'podlesie', '12', '34-447');
-
