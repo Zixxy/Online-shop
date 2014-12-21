@@ -163,12 +163,17 @@
 			<column name="login" type="varchar" length="20" jt="12" mandatory="y" />
 			<column name="haslo" type="varchar" length="40" jt="12" mandatory="y" />
 <<<<<<< HEAD
+<<<<<<< HEAD
 			<column name="imie" type="varchar" length="20" jt="12" mandatory="y" />
 			<column name="nazwisko" type="varchar" length="20" jt="12" mandatory="y" />
 			<column name="adres" type="int" jt="4" />
 =======
 			<column name="imie" type="varchar" length="40" jt="12" mandatory="y" />
 			<column name="nazwisko" type="varchar" length="40" jt="12" mandatory="y" />
+=======
+			<column name="imie" type="varchar" length="20" jt="12" mandatory="y" />
+			<column name="nazwisko" type="varchar" length="20" jt="12" mandatory="y" />
+>>>>>>> 628c1e7... changed primary key in magazyn.
 			<column name="adres" type="int" jt="4" />
 			<column name="firma" type="varchar" length="40" jt="12" />
 >>>>>>> 4bf0a7e... initial database
@@ -198,7 +203,7 @@
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
 		<table name="koszyk" generator_rows="337" >
-			<column name="produkt" type="varchar" length="40" jt="12" mandatory="y" />
+			<column name="produkt" type="numeric" length="16" jt="2" mandatory="y" />
 			<column name="ilosc" type="int" jt="4" mandatory="y" />
 			<column name="login" type="varchar" length="20" jt="12" mandatory="y" />
 			<index name="pk_koszyk_produkty" unique="PRIMARY_KEY" >
@@ -216,20 +221,32 @@
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
 		<table name="magazyn" generator_rows="225" >
+			<column name="kod_kreskowy" type="numeric" length="16" jt="2" mandatory="y" />
 			<column name="kod_towarowy" type="varchar" length="40" jt="12" mandatory="y" />
-			<column name="kod_kreskowy" type="varchar" length="20" jt="12" />
 			<column name="cena_hurtowa" type="numeric" length="6" decimal="2" jt="2" mandatory="y" />
 			<column name="cena_detaliczna" type="numeric" length="6" decimal="2" jt="2" mandatory="y" />
-			<column name="vat" type="numeric" length="0" decimal="2" jt="2" mandatory="y" />
+			<column name="vat" type="int" length="0" decimal="2" jt="4" mandatory="y" />
 			<column name="stan_biezacy" type="int" jt="4" />
 			<column name="nazwa_kategori" type="varchar" length="30" jt="12" mandatory="y" />
 			<column name="nazwa_dostawcy" type="varchar" length="40" jt="12" mandatory="y" />
-			<index name="pk_produkty" unique="PRIMARY_KEY" >
-				<column name="kod_towarowy" />
-			</index>
 			<index name="idx_magazyn" unique="NORMAL" >
 				<column name="nazwa_dostawcy" />
 			</index>
+			<index name="pk_magazyn" unique="PRIMARY_KEY" >
+				<column name="kod_kreskowy" />
+			</index>
+			<constraint name="ck_3" >
+				<string>cena_hurtowa&lt;cena_detaliczna</string>
+			</constraint>
+			<constraint name="ck_4" >
+				<string>vat in (0,4,5,7,8,23)</string>
+			</constraint>
+			<constraint name="ck_5" >
+				<string>stan_biezacy&gt;0</string>
+			</constraint>
+			<constraint name="ck_6" >
+				<string>kod_kreskowy&gt;0</string>
+			</constraint>
 			<fk name="fk_magazyn" to_schema="sklepinternetowy" to_table="dostawcy" >
 				<fk_column name="nazwa_dostawcy" pk="nazwa_dostawcy" />
 			</fk>
@@ -288,8 +305,12 @@
 =======
 		<table name="zamowienia" generator_rows="225" >
 			<column name="id_zamowienia" type="int" jt="4" mandatory="y" autoincrement="y" />
+<<<<<<< HEAD
 			<column name="login_klienta" type="varchar" length="40" jt="12" mandatory="y" />
 >>>>>>> 4bf0a7e... initial database
+=======
+			<column name="login_klienta" type="varchar" length="20" jt="12" mandatory="y" />
+>>>>>>> 628c1e7... changed primary key in magazyn.
 			<column name="zrealizowane" type="bool" jt="-7" mandatory="y" />
 			<column name="data_zlozenia" type="date" jt="91" mandatory="y" >
 				<defo>CURRENT_DATE</defo>
@@ -326,6 +347,7 @@
 		</table>
 		<table name="zamowienia_produkty" generator_rows="337" >
 <<<<<<< HEAD
+<<<<<<< HEAD
 			<column name="produkt" type="numeric" length="16" jt="2" mandatory="y" />
 			<column name="id_zamowienia" type="int" length="40" jt="4" mandatory="y" />
 			<column name="ilosc" type="int" jt="4" mandatory="y" />
@@ -340,6 +362,9 @@
 				<column name="produkt" />
 =======
 			<column name="produkt" type="varchar" length="40" jt="12" mandatory="y" />
+=======
+			<column name="produkt" type="numeric" length="16" jt="2" mandatory="y" />
+>>>>>>> 628c1e7... changed primary key in magazyn.
 			<column name="id_zamowienia" type="varchar" length="40" jt="12" mandatory="y" />
 			<column name="ilosc" type="int" jt="4" mandatory="y" />
 			<index name="pk_zamowienia_produkty" unique="PRIMARY_KEY" >
@@ -378,21 +403,155 @@
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
-		<sequence name="id_adres" start="1" />
 	</schema>
 	<layout id="Layout1014946" name="SklepInternetowy" show_relation_columns="y" >
-		<entity schema="sklepinternetowy" name="zamowienia_produkty" color="b2cdf7" x="630" y="330" />
-		<entity schema="sklepinternetowy" name="adresy" color="b2cdf7" x="255" y="285" />
-		<entity schema="sklepinternetowy" name="zamowienia" color="b2cdf7" x="555" y="90" />
-		<entity schema="sklepinternetowy" name="magazyn" color="b2cdf7" x="855" y="480" />
-		<entity schema="sklepinternetowy" name="faktury_sprzedazy" color="b2cdf7" x="795" y="45" />
-		<entity schema="sklepinternetowy" name="koszyk" color="b2cdf7" x="240" y="570" />
 		<entity schema="sklepinternetowy" name="konta_uzytkownicy" color="b2cdf7" x="60" y="60" />
+		<entity schema="sklepinternetowy" name="zamowienia" color="b2cdf7" x="555" y="90" />
+		<entity schema="sklepinternetowy" name="adresy" color="b2cdf7" x="255" y="270" />
 		<entity schema="sklepinternetowy" name="firma" color="b2cdf7" x="45" y="360" />
-		<entity schema="sklepinternetowy" name="dostawcy" color="b2cdf7" x="465" y="450" />
+		<entity schema="sklepinternetowy" name="faktury_sprzedazy" color="b2cdf7" x="795" y="45" />
 		<entity schema="sklepinternetowy" name="paragon" color="b2cdf7" x="900" y="225" />
-		<script name="Sql" id="SQL6920754" >
-			<string><![CDATA[select * from konta_uzytkownicy;
+		<entity schema="sklepinternetowy" name="magazyn" color="b2cdf7" x="855" y="480" />
+		<entity schema="sklepinternetowy" name="zamowienia_produkty" color="b2cdf7" x="630" y="330" />
+		<entity schema="sklepinternetowy" name="dostawcy" color="b2cdf7" x="465" y="450" />
+		<entity schema="sklepinternetowy" name="koszyk" color="b2cdf7" x="240" y="570" />
+		<script name="dostawcy" id="SQL703288" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.dostawcy ( 
+	nazwa_dostawcy       varchar(40)  NOT NULL  ,
+	nip                  char(10)    ,
+	adres                int  NOT NULL  ,
+	numer_konta          char(26)    ,
+	parametry_dostawcy   varchar(100)    ,
+	CONSTRAINT pk_dostawcy PRIMARY KEY ( nazwa_dostawcy ),
+	CONSTRAINT idx_dostawcy UNIQUE ( adres ) 
+ ) engine=InnoDB;
+
+ALTER TABLE sklepinternetowy.dostawcy ADD CONSTRAINT fk_dostawcy FOREIGN KEY ( adres ) REFERENCES sklepinternetowy.adresy( id_adres ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="faktury_sprzedazy" id="SQL299226" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.faktury_sprzedazy ( 
+	id_zamowienia        int  NOT NULL  ,
+	nr_faktury_sprzedazy varchar(20)  NOT NULL  ,
+	data_wystawienia     date  NOT NULL DEFAULT CURRENT_DATE ,
+	wartosc_netto        numeric(12,2)  NOT NULL  ,
+	wartosc_brutto       numeric(12,2)  NOT NULL  ,
+	firorma_platnosci    varchar(45)  NOT NULL  ,
+	CONSTRAINT pk_faktury_sprzedazy PRIMARY KEY ( id_zamowienia )
+ ) engine=InnoDB;
+
+ALTER TABLE sklepinternetowy.faktury_sprzedazy ADD CONSTRAINT ck_1 CHECK ( wartosc_netto <= wartosc_brutto );
+
+ALTER TABLE sklepinternetowy.faktury_sprzedazy ADD CONSTRAINT fk_faktury_sprzedazy FOREIGN KEY ( id_zamowienia ) REFERENCES sklepinternetowy.zamowienia( id_zamowienia ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="firma" id="SQL86100" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.firma ( 
+	nazwa_firmy          varchar(40)  NOT NULL  ,
+	nip                  char(10)    ,
+	adres                int  NOT NULL  ,
+	CONSTRAINT pk_dostawcy_0 PRIMARY KEY ( nazwa_firmy ),
+	CONSTRAINT idx_dostawcy_0 UNIQUE ( adres ) 
+ );
+
+ALTER TABLE sklepinternetowy.firma ADD CONSTRAINT fk_firma FOREIGN KEY ( adres ) REFERENCES sklepinternetowy.adresy( id_adres ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="koszyk" id="SQL1020510" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.koszyk ( 
+	produkt              varchar(40)  NOT NULL  ,
+	ilosc                int  NOT NULL  ,
+	login                varchar(20)  NOT NULL  ,
+	CONSTRAINT pk_koszyk_produkty PRIMARY KEY ( produkt )
+ ) engine=InnoDB;
+
+CREATE INDEX idx_koszyk_produkty ON sklepinternetowy.koszyk ( login );
+
+ALTER TABLE sklepinternetowy.koszyk ADD CONSTRAINT fk_koszyk_produkty FOREIGN KEY ( produkt ) REFERENCES sklepinternetowy.magazyn( kod_towarowy ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+ALTER TABLE sklepinternetowy.koszyk ADD CONSTRAINT fk_koszyk_produkty_0 FOREIGN KEY ( login ) REFERENCES sklepinternetowy.konta_uzytkownicy( login ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="magazyn" id="SQL777871" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.magazyn ( 
+	kod_towarowy         varchar(40)  NOT NULL  ,
+	kod_kreskowy         numeric(16)    ,
+	cena_hurtowa         numeric(6,2)  NOT NULL  ,
+	cena_detaliczna      numeric(6,2)  NOT NULL  ,
+	vat                  int  NOT NULL  ,
+	stan_biezacy         int    ,
+	nazwa_kategori       varchar(30)  NOT NULL  ,
+	nazwa_dostawcy       varchar(40)  NOT NULL  ,
+	CONSTRAINT pk_produkty PRIMARY KEY ( kod_towarowy )
+ ) engine=InnoDB;
+
+ALTER TABLE sklepinternetowy.magazyn ADD CONSTRAINT ck_3 CHECK ( cena_hurtowa<cena_detaliczna );
+
+ALTER TABLE sklepinternetowy.magazyn ADD CONSTRAINT ck_4 CHECK ( vat in (0,4,5,7,8,23) );
+
+ALTER TABLE sklepinternetowy.magazyn ADD CONSTRAINT ck_5 CHECK ( stan_biezacy>0 );
+
+ALTER TABLE sklepinternetowy.magazyn ADD CONSTRAINT ck_6 CHECK ( kod_kreskowy>0 );
+
+CREATE INDEX idx_magazyn ON sklepinternetowy.magazyn ( nazwa_dostawcy );
+
+ALTER TABLE sklepinternetowy.magazyn ADD CONSTRAINT fk_magazyn FOREIGN KEY ( nazwa_dostawcy ) REFERENCES sklepinternetowy.dostawcy( nazwa_dostawcy ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="paragon" id="SQL448210" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.paragon ( 
+	id_zamowienia        int  NOT NULL  ,
+	wartosc_netto        numeric(12,2)  NOT NULL  ,
+	wartosc_brutto       numeric(12,2)  NOT NULL  ,
+	forma_platnosci      varchar(20)  NOT NULL  ,
+	CONSTRAINT pk_paragon PRIMARY KEY ( id_zamowienia )
+ ) engine=InnoDB;
+
+ALTER TABLE sklepinternetowy.paragon ADD CONSTRAINT ck_2 CHECK ( wartosc_netto<wartosc_brutto );
+
+ALTER TABLE sklepinternetowy.paragon ADD CONSTRAINT fk_paragon FOREIGN KEY ( id_zamowienia ) REFERENCES sklepinternetowy.zamowienia( id_zamowienia ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="zamowienia" id="SQL9560304" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.zamowienia ( 
+	id_zamowienia        int  NOT NULL  AUTO_INCREMENT,
+	login_klienta        varchar(20)  NOT NULL  ,
+	zrealizowane         bool  NOT NULL  ,
+	data_zlozenia        date  NOT NULL DEFAULT CURRENT_DATE ,
+	adres_zamowienia     int  NOT NULL  ,
+	CONSTRAINT pk_zamowienia PRIMARY KEY ( id_zamowienia )
+ ) engine=InnoDB;
+
+CREATE INDEX idx_zamowienia ON sklepinternetowy.zamowienia ( login_klienta );
+
+CREATE INDEX idx_zamowienia_0 ON sklepinternetowy.zamowienia ( adres_zamowienia );
+
+ALTER TABLE sklepinternetowy.zamowienia ADD CONSTRAINT fk_zamowienia FOREIGN KEY ( login_klienta ) REFERENCES sklepinternetowy.konta_uzytkownicy( login ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+ALTER TABLE sklepinternetowy.zamowienia ADD CONSTRAINT fk_zamowienia_0 FOREIGN KEY ( adres_zamowienia ) REFERENCES sklepinternetowy.adresy( id_adres ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="zamowienia_produkty" id="SQL507198" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.zamowienia_produkty ( 
+	produkt              varchar(40)  NOT NULL  ,
+	id_zamowienia        varchar(40)  NOT NULL  ,
+	ilosc                int  NOT NULL  ,
+	CONSTRAINT pk_zamowienia_produkty PRIMARY KEY ( produkt )
+ ) engine=InnoDB;
+
+CREATE INDEX idx_zamowienia_produkty ON sklepinternetowy.zamowienia_produkty ( id_zamowienia );
+
+ALTER TABLE sklepinternetowy.zamowienia_produkty ADD CONSTRAINT fk_zamowienia_produkty FOREIGN KEY ( id_zamowienia ) REFERENCES sklepinternetowy.zamowienia( id_zamowienia ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+ALTER TABLE sklepinternetowy.zamowienia_produkty ADD CONSTRAINT fk_zamowienia_produkty_0 FOREIGN KEY ( produkt ) REFERENCES sklepinternetowy.magazyn( kod_towarowy ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
 ]]></string>
 		</script>
 >>>>>>> 4bf0a7e... initial database
