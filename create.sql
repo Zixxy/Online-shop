@@ -25,12 +25,13 @@ CREATE TABLE konta_uzytkownicy (
 	CONSTRAINT fk_adres FOREIGN KEY ( adres ) REFERENCES adresy( id_adres )
  );
 
+
 CREATE TABLE zamowienia ( 
 	id_zamowienia        serial  NOT NULL ,
 	login_klienta        varchar(20)  NOT NULL,
 	zrealizowane         bool  NOT NULL,
 	data_zlozenia        date  NOT NULL DEFAULT NOW(),
-	adres    int  NOT NULL,
+	adres    			 int  NOT NULL,
 	CONSTRAINT pk_zamowienia PRIMARY KEY ( id_zamowienia ),
 	CONSTRAINT fk_konta_uzytkownicy FOREIGN KEY ( login_klienta ) REFERENCES konta_uzytkownicy( login ),
 	CONSTRAINT fk_adresy FOREIGN KEY ( adres ) REFERENCES adresy( id_adres )
@@ -135,9 +136,9 @@ CREATE INDEX idx_dostawy ON dostawy ( nazwa_dostawcy );
 
 CREATE INDEX idx_kartoteka_towaru ON kartoteka_towaru ( kod_kreskowy );
 
-CREATE INDEX idx_magazyn ON produkty ( nazwa_dostawcy );
-
 CREATE INDEX idx_zamowienia_produkty ON zamowienia_produkty ( id_zamowienia );
+
+CREATE INDEX idx_zamowienia_produkty_0 ON zamowienia_produkty ( produkt );
 
 CREATE INDEX idx_zamowienia ON zamowienia ( login_klienta );
 
@@ -230,6 +231,7 @@ $$
 	where zamowienia.id_zamowienia = $1;
 $$ language sql;
 
+
 CREATE or replace function order_details(int) returns table(
 	imie varchar, nazwisko varchar, ulica varchar, miejscowosc varchar, 
 	numer_domu varchar, kod_pocztowy char(6), data_zlozenia date,
@@ -319,7 +321,6 @@ begin
 			SELECT cena_sprzedazy_netto 
 			from product_current_state
 			where kod_kreskowy = product);
-		raise notice ' ok';
 		gross_value := gross_value + (
 			SELECT cena_sprzedazy_netto*(1+(vat::numeric(8,2) / 100))
 			from product_current_state
@@ -337,16 +338,6 @@ end
 $$ language plpgsql;
 --CREATE or REPLACE function order()
 --VIEWS
-
-CREATE VIEW  exhibition as
-select 
-	case when nazwa = null
-	then
-		kod_towarowy
-	else
-		nazwa as nazwa, cena_detaliczna as cena, opis as opis
-from magazyn;
-
 CREATE VIEW payments as
 SELECT
 	dy.nazwa_dostawcy,
@@ -354,8 +345,7 @@ SELECT
 	f.nr_faktury,
 	f.data_wystawienia,
 	f.wartosc_netto,
-	f.wartosc_brutto,
-	f.forma_platnosci
+	f.wartosc_brutto
 FROM faktury_zakupow f
 JOIN dostawy d 
 on d.id_dostawy = f.id_dostawy
