@@ -1,4 +1,10 @@
 CREATE TYPE formy_platnosci AS ENUM ('sad', 'ok', 'happy');
+CREATE TYPE sale_document AS ENUM('faktura', 'paragon');
+CREATE TYPE order_worth as(
+	order_id integer,
+	net_value numeric(8,2),
+	gross_value numeric(8,2)
+);
 
 CREATE TABLE adresy ( 
 	id_adres             serial PRIMARY KEY,
@@ -83,8 +89,8 @@ CREATE TABLE kartoteka_towaru (
 	kod_kreskowy         numeric(16)  NOT NULL,
 	data_od              date  NOT NULL DEFAULT now(),
 	data_do              date,
-	cena_zakupu_netto    numeric(6,2),
-	cena_sprzedazy_netto numeric(6,2),
+	cena_zakupu_netto    numeric(8,2),
+	cena_sprzedazy_netto numeric(8,2),
 	vat                  int,
 	CONSTRAINT ck_5 CHECK ( cena_zakupu_netto < cena_sprzedazy_netto),
 	CONSTRAINT ck_4	 CHECK ( vat in (0, 5, 7, 8, 23)), 
@@ -103,7 +109,7 @@ CREATE TABLE dostawy_produkty (
 	id_dostawy           int  NOT NULL,
 	kod_produktu         numeric(16)  NOT NULL,
 	ilosc                int  NOT NULL,
-	cena_netto 			 numeric(6,2) NOT NULL,
+	cena_netto 			 numeric(8,2) NOT NULL,
 	vat					 int,
 	CONSTRAINT ck_3 CHECK ( vat in (0, 5, 7, 8, 23)), 
 	CONSTRAINT ck_6 CHECK ( ilosc > 0), 
@@ -169,17 +175,28 @@ CREATE TRIGGER insert_numer_konta BEFORE INSERT OR UPDATE ON dostawcy
 FOR EACH ROW EXECUTE PROCEDURE numer_konta_correct();
 
 create or replace function hash_passoword() returns trigger as $hash_passoword$
-      begin
-           if char_length(NEW.haslo) < 6
-           		then raise exception 'password is too short.';
-           end if;
-           NEW.haslo:= crypt(NEW.haslo, gen_salt('md5'));
-           return NEW;
-      end
+    begin
+        if char_length(NEW.haslo) < 6
+          	then raise exception 'password is too short.';
+        end if;
+        NEW.haslo:= crypt(NEW.haslo, gen_salt('md5'));
+        return NEW;
+    end
 $hash_passoword$ language plpgsql;
 
 CREATE TRIGGER insert_password BEFORE INSERT OR UPDATE ON konta_uzytkownicy
 FOR EACH ROW EXECUTE PROCEDURE hash_passoword();
+
+CREATE OR REPLACE function update_magazine_state() returns trigger as $update_magazine_state$
+	begin
+		update produkty set stan_biezacy = stan_biezacy + NEW.ilosc
+			where produkty.kod_kreskowy = NEW.kod_produktu;
+		return NEW;
+	end
+$update_magazine_state$ language plpgsql;
+
+CREATE TRIGGER insert_dostawy_produkty BEFORE INSERT OR UPDATE ON dostawy_produkty
+FOR EACH ROW EXECUTE PROCEDURE update_magazine_state();
 --functions
 CREATE or replace function password_is_correct(varchar, varchar) returns bool 
 as
@@ -190,17 +207,17 @@ $$
 $$ language sql;
 
 
-CREATE or replace function order_products(int) returns 
+CREATE or replace function ordered_products(int) returns 
 table(nazwa varchar(40),kategoria varchar(40),
-ilosc int, cena_sprzedazy_netto numeric(6,2),
-cena_sprzedazy_brutto numeric(6,2), vat int)
+ilosc int, cena_sprzedazy_netto numeric(8,2),
+cena_sprzedazy_brutto numeric(8,2), vat int)
 as
 $$
 	select produkty.nazwa, 
 		produkty.kategoria, 
 		zamowienia_produkty.ilosc,
 		kartoteka_towaru.cena_sprzedazy_netto,
-		kartoteka_towaru.cena_sprzedazy_netto*(100+vat::numeric(6,2)) as cena_sprzedazy_brutto,
+		kartoteka_towaru.cena_sprzedazy_netto*(100+vat::numeric(8,2)) as cena_sprzedazy_brutto,
 		kartoteka_towaru.vat as "vat"
 	from zamowienia
 	join zamowienia_produkty
@@ -216,7 +233,7 @@ $$ language sql;
 CREATE or replace function order_details(int) returns table(
 	imie varchar, nazwisko varchar, ulica varchar, miejscowosc varchar, 
 	numer_domu varchar, kod_pocztowy char(6), data_zlozenia date,
-	zrealizowane bool, wartosc_netto numeric(6,2), wartosc_brutto numeric(6,2)
+	zrealizowane bool, wartosc_netto numeric(8,2), wartosc_brutto numeric(8,2)
 )
 as
 $$
@@ -225,11 +242,11 @@ $$
 	z.zrealizowane, (
 		select 
 			sum(cena_sprzedazy_netto)
-		from order_products($1)
+		from ordered_products($1)
 		) as wartosc_netto, (
 		select
 			sum(cena_sprzedazy_brutto)
-		from order_products($1)
+		from ordered_products($1)
 		) as wartosc_brutto
 	from zamowienia z
 	join konta_uzytkownicy ku
@@ -246,8 +263,8 @@ $$
 	declare product_code numeric(16);
 	declare id int;
 	declare iterator int := 1;
-	declare net_value numeric(6,2) := 0;
-	declare gross_value numeric(6,2) := 0;
+	declare net_value numeric(8,2) := 0;
+	declare gross_value numeric(8,2) := 0;
 	begin
 		if (select nazwa_dostawcy from dostawcy where $1 = nazwa_dostawcy) is NULL
 		then raise exception 'No such provider in database';
@@ -257,12 +274,13 @@ $$
 			then raise exception 'No such product in database';
 			end if;
 		end loop;
+		
 		insert into dostawy(nazwa_dostawcy) values
 			($1);
 		select into id currval('dostawy_id_dostawy_seq');
 		foreach product_code in ARRAY $2 loop
 			net_value := net_value + $4[iterator];
-			gross_value := gross_value + $4[iterator]*($5[iterator]::numeric(6,2));
+			gross_value := gross_value + $4[iterator]*(1+($5[iterator]::numeric(8,2) / 100));
 			insert into dostawy_produkty(id_dostawy, kod_produktu, ilosc, cena_netto) values
 			(id, product_code, $3[iterator], $4[iterator]);
 			iterator := iterator + 1;
@@ -271,6 +289,53 @@ $$
 		(id, numer_faktury, data, net_value, gross_value, false);
 	end
 $$ language plpgsql;
+
+CREATE OR REPLACE function prepare_order(customer varchar,products numeric(16)[],amount int[], 
+	address int, order_date date) 
+returns order_worth
+as
+$$	
+	declare product numeric(16);
+	declare iterator integer := 1;
+	declare id int;
+	declare net_value numeric(8,2) := 0;
+	declare gross_value numeric(8,2) := 0;
+	declare result order_worth;
+begin
+	if (select customer from konta_uzytkownicy where  customer = konta_uzytkownicy.login) is NULL
+		then raise exception 'No such customer in database';
+	end if;
+	foreach product in ARRAY products loop
+		if (select kod_kreskowy from produkty where product = kod_kreskowy) is null
+			then raise exception 'No such product in database';
+		end if;
+	end loop;
+	insert into zamowienia(login_klienta, zrealizowane, data_zlozenia, adres) values
+	(customer, false, order_date, address);
+	select into id currval('zamowienia_id_zamowienia_seq');
+
+	foreach product in ARRAY products loop
+		net_value := net_value + (
+			SELECT cena_sprzedazy_netto 
+			from product_current_state
+			where kod_kreskowy = product);
+		raise notice ' ok';
+		gross_value := gross_value + (
+			SELECT cena_sprzedazy_netto*(1+(vat::numeric(8,2) / 100))
+			from product_current_state
+			where kod_kreskowy = product
+			);
+		insert into zamowienia_produkty(produkt, id_zamowienia, ilosc) values
+		(product, id, amount[iterator]);	
+		iterator:= iterator + 1;
+	end loop;
+	result.order_id = id;
+	result.net_value = net_value;
+	result.gross_value = gross_value;
+	return result;
+end
+$$ language plpgsql;
+--CREATE or REPLACE function order()
 --VIEWS
 
 CREATE VIEW  exhibition as
@@ -297,3 +362,19 @@ on d.id_dostawy = f.id_dostawy
 JOIN dostawcy dy 
 on d.nazwa_dostawcy = dy.nazwa_dostawcy
 where f.uregulowane; 
+
+CREATE VIEW product_current_state as
+SELECT
+	p.kod_kreskowy,
+	p.nazwa, 
+	p.stan_biezacy,
+	p.kategoria,
+	p.opis,
+	kt.data_od,
+	kt.cena_zakupu_netto,
+	kt.cena_sprzedazy_netto,
+	kt.vat
+from produkty p
+join kartoteka_towaru kt
+on p.kod_kreskowy = kt.kod_kreskowy
+and kt.data_do is null;
