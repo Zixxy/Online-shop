@@ -29,7 +29,11 @@
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
+<<<<<<< HEAD
 		<table name="dostawy" generator_rows="225" >
+=======
+		<table name="dostawy" >
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			<column name="id_dostawy" type="int" jt="4" mandatory="y" autoincrement="y" />
 			<column name="nazwa_dostawcy" type="varbinary" length="40" jt="-3" mandatory="y" />
 			<index name="pk_dostawy" unique="PRIMARY_KEY" >
@@ -43,11 +47,18 @@
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
+<<<<<<< HEAD
 		<table name="dostawy_produkty" generator_rows="337" >
 			<column name="id_dostawy" type="int" jt="4" mandatory="y" />
 			<column name="kod_produktu" type="numeric" length="16" jt="2" mandatory="y" />
 			<column name="ilosc" type="int" jt="4" mandatory="y" />
 			<column name="cena_netto" type="numeric" length="6" decimal="2" jt="2" mandatory="y" />
+=======
+		<table name="dostawy_produkty" >
+			<column name="id_dostawy" type="int" jt="4" mandatory="y" />
+			<column name="kod_produktu" type="numeric" length="16" jt="2" mandatory="y" />
+			<column name="ilosc" type="int" jt="4" mandatory="y" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			<index name="idx_dostawy_produkty" unique="NORMAL" >
 				<column name="kod_produktu" />
 			</index>
@@ -85,7 +96,11 @@
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
+<<<<<<< HEAD
 		<table name="faktury_zakupow" generator_rows="337" >
+=======
+		<table name="faktury_zakupow" >
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			<column name="id_dostawy" type="int" jt="4" mandatory="y" />
 			<column name="nr_faktury" type="varchar" length="20" jt="12" mandatory="y" />
 			<column name="data_wystawienia" type="date" jt="91" mandatory="y" >
@@ -93,7 +108,13 @@
 			</column>
 			<column name="wartosc_netto" type="numeric" length="12" decimal="2" jt="2" mandatory="y" />
 			<column name="wartosc_brutto" type="numeric" length="12" decimal="2" jt="2" mandatory="y" />
+<<<<<<< HEAD
 			<column name="uregulowane" type="bool" jt="-7" mandatory="y" />
+=======
+			<column name="forma_platnosci" type="enum" length="45" jt="12" mandatory="y" >
+				<enumeration>karta, gotówka, przelew</enumeration>
+			</column>
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			<index name="pk_faktury_sprzedazy_0" unique="PRIMARY_KEY" >
 				<column name="id_dostawy" />
 			</index>
@@ -101,14 +122,20 @@
 				<fk_column name="id_dostawy" pk="id_dostawy" />
 			</fk>
 		</table>
+<<<<<<< HEAD
 		<table name="kartoteka_towaru" generator_rows="337" >
 			<column name="kod_kreskowy" type="numeric" length="16" jt="2" mandatory="y" />
+=======
+		<table name="kartoteka_towaru" >
+			<column name="kod_towaru" type="numeric" length="16" jt="2" mandatory="y" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			<column name="data_od" type="date" jt="91" mandatory="y" >
 				<defo>CURRENT_DATE</defo>
 			</column>
 			<column name="data_do" type="date" jt="91" />
 			<column name="cena_zakupu_netto" type="numeric" length="6" decimal="2" jt="2" />
 			<column name="cena_sprzedazy_netto" type="numeric" length="6" decimal="2" jt="2" />
+<<<<<<< HEAD
 			<column name="vat" type="int" length="6" decimal="2" jt="4" />
 			<index name="pk_kartoteka_towaru" unique="PRIMARY_KEY" >
 				<column name="kod_kreskowy" />
@@ -119,6 +146,18 @@
 			</index>
 			<fk name="fk_kartoteka_towaru" to_schema="sklepinternetowy" to_table="produkty" >
 				<fk_column name="kod_kreskowy" pk="kod_kreskowy" />
+=======
+			<column name="vat" type="numeric" length="6" decimal="2" jt="2" />
+			<index name="pk_kartoteka_towaru" unique="PRIMARY_KEY" >
+				<column name="kod_towaru" />
+				<column name="data_od" />
+			</index>
+			<index name="idx_kartoteka_towaru" unique="NORMAL" >
+				<column name="kod_towaru" />
+			</index>
+			<fk name="fk_kartoteka_towaru" to_schema="sklepinternetowy" to_table="produkty" >
+				<fk_column name="kod_towaru" pk="kod_kreskowy" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
@@ -162,10 +201,18 @@
 		</table>
 		<table name="produkty" generator_rows="225" >
 			<column name="kod_kreskowy" type="numeric" length="16" jt="2" mandatory="y" />
+<<<<<<< HEAD
 			<column name="nazwa" type="varchar" length="20" jt="12" mandatory="y" />
 			<column name="stan_biezacy" type="int" jt="4" />
 			<column name="kategoria" type="varchar" length="25" jt="12" mandatory="y" />
 			<column name="opis" type="varchar" length="200" jt="12" />
+=======
+			<column name="kod_towarowy" type="varchar" length="40" jt="12" mandatory="y" />
+			<column name="stan_biezacy" type="int" jt="4" />
+			<column name="kategoria" type="varchar" length="25" jt="12" mandatory="y" />
+			<column name="opis" type="varchar" length="200" jt="12" />
+			<column name="nazwa" type="varchar" length="20" jt="12" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			<index name="pk_magazyn" unique="PRIMARY_KEY" >
 				<column name="kod_kreskowy" />
 			</index>
@@ -190,7 +237,11 @@
 			<column name="data_zlozenia" type="date" jt="91" mandatory="y" >
 				<defo>CURRENT_DATE</defo>
 			</column>
+<<<<<<< HEAD
 			<column name="adres" type="int" jt="4" mandatory="y" />
+=======
+			<column name="adres_zamowienia" type="int" jt="4" mandatory="y" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			<index name="idx_zamowienia" unique="NORMAL" >
 				<column name="login_klienta" />
 			</index>
@@ -198,13 +249,21 @@
 				<column name="id_zamowienia" />
 			</index>
 			<index name="idx_zamowienia_0" unique="NORMAL" >
+<<<<<<< HEAD
 				<column name="adres" />
+=======
+				<column name="adres_zamowienia" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			</index>
 			<fk name="fk_zamowienia" to_schema="sklepinternetowy" to_table="konta_uzytkownicy" >
 				<fk_column name="login_klienta" pk="login" />
 			</fk>
 			<fk name="fk_zamowienia_0" to_schema="sklepinternetowy" to_table="adresy" >
+<<<<<<< HEAD
 				<fk_column name="adres" pk="id_adres" />
+=======
+				<fk_column name="adres_zamowienia" pk="id_adres" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
@@ -219,19 +278,27 @@
 				<column name="produkt" />
 				<column name="id_zamowienia" />
 			</index>
+<<<<<<< HEAD
 			<index name="idx_zamowienia_produkty_0" unique="NORMAL" >
 				<column name="produkt" />
 			</index>
+=======
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			<fk name="fk_zamowienia_produkty" to_schema="sklepinternetowy" to_table="zamowienia" >
 				<fk_column name="id_zamowienia" pk="id_zamowienia" />
 			</fk>
 			<fk name="fk_zamowienia_produkty_0" to_schema="sklepinternetowy" to_table="produkty" >
+<<<<<<< HEAD
 				<fk_column name="produkt" pk="kod_kreskowy" />
+=======
+				<fk_column name="produkt" pk="kod_towarowy" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
 	</schema>
 	<layout id="Layout1014946" name="SklepInternetowy" show_relation_columns="y" >
+<<<<<<< HEAD
 		<entity schema="sklepinternetowy" name="kartoteka_towaru" color="b2cdf7" x="720" y="360" />
 		<entity schema="sklepinternetowy" name="konta_uzytkownicy" color="b2cdf7" x="75" y="45" />
 		<entity schema="sklepinternetowy" name="zamowienia" color="b2cdf7" x="315" y="45" />
@@ -244,5 +311,19 @@
 		<entity schema="sklepinternetowy" name="dostawy" color="b2cdf7" x="360" y="615" />
 		<entity schema="sklepinternetowy" name="dostawy_produkty" color="b2cdf7" x="285" y="480" />
 		<entity schema="sklepinternetowy" name="faktury_zakupow" color="b2cdf7" x="585" y="570" />
+=======
+		<entity schema="sklepinternetowy" name="konta_uzytkownicy" color="b2cdf7" x="75" y="45" />
+		<entity schema="sklepinternetowy" name="adresy" color="b2cdf7" x="45" y="255" />
+		<entity schema="sklepinternetowy" name="zamowienia" color="b2cdf7" x="315" y="45" />
+		<entity schema="sklepinternetowy" name="paragon" color="b2cdf7" x="630" y="225" />
+		<entity schema="sklepinternetowy" name="dostawcy" color="b2cdf7" x="45" y="510" />
+		<entity schema="sklepinternetowy" name="dostawy_produkty" color="b2cdf7" x="285" y="480" />
+		<entity schema="sklepinternetowy" name="faktury_sprzedazy" color="b2cdf7" x="705" y="60" />
+		<entity schema="sklepinternetowy" name="zamowienia_produkty" color="b2cdf7" x="300" y="255" />
+		<entity schema="sklepinternetowy" name="faktury_zakupow" color="b2cdf7" x="585" y="570" />
+		<entity schema="sklepinternetowy" name="kartoteka_towaru" color="b2cdf7" x="675" y="405" />
+		<entity schema="sklepinternetowy" name="dostawy" color="b2cdf7" x="360" y="615" />
+		<entity schema="sklepinternetowy" name="produkty" color="b2cdf7" x="480" y="375" />
+>>>>>>> 27aeb8731e6b80c2c5527380d2b41fc4fe23eec9
 	</layout>
 </project>
