@@ -33,7 +33,7 @@ public class Loader {
 	
 	public static void main(String[] args){
 		try {
-			System.out.print(new ExecutorOfOrders(new Loader().connection).selectUnrealizedOrders());
+			System.out.print(new OrdersService(new Loader().connection).selectUnrealizedOrders());
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
