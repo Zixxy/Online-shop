@@ -74,7 +74,8 @@ CREATE TABLE produkty (
 	stan_biezacy         int,
 	kategoria      		 varchar(30),
 	opis				 varchar(200),
-	CONSTRAINT pk_produkty PRIMARY KEY ( kod_kreskowy )
+	CONSTRAINT pk_produkty PRIMARY KEY ( kod_kreskowy ),
+	CONSTRAINT dodatni_stan_biezacy  CHECK ( stan_biezacy >= 0)
  );
 
 CREATE TABLE zamowienia_produkty ( 
@@ -198,7 +199,37 @@ $update_magazine_state$ language plpgsql;
 
 CREATE TRIGGER insert_dostawy_produkty BEFORE INSERT OR UPDATE ON dostawy_produkty
 FOR EACH ROW EXECUTE PROCEDURE update_magazine_state();
+
+CREATE OR REPLACE function insert_invoice() returns trigger as $insert_invoice$
+	declare prev_num int;
+	declare prev_date date;
+	begin
+		prev_num = (select nr_faktury from faktury_sprzedazy order by data_wystawienia desc, nr_faktury desc limit 1);
+		prev_date = (select data_wystawienia from faktury_sprzedazy order by data_wystawienia desc, nr_faktury desc limit 1);
+
+		if prev_num is null 
+		then prev_num = 0;
+		end if;
+
+		if prev_date is null
+		then prev_date = now();
+		end if;
+
+		if (select extract(year from prev_date)) - (select extract(year from NEW.data_wystawienia)) = 1
+		then prev_num = 0;
+		end if;
+
+		NEW.nr_faktury = prev_num + 1;
+		return NEW;
+	end
+$insert_invoice$ language plpgsql;
+
+CREATE TRIGGER insert_faktury_sprzedazy BEFORE INSERT OR UPDATE ON faktury_sprzedazy
+FOR EACH ROW EXECUTE PROCEDURE insert_invoice();
+
 --functions
+
+
 CREATE or replace function password_is_correct(varchar, varchar) returns bool 
 as
 $$
@@ -336,8 +367,50 @@ begin
 	return result;
 end
 $$ language plpgsql;
+
+CREATE OR REPLACE function execute_order(int) returns void
+as 
+$$
+	begin
+		create table temp_table(
+			nazwa, kategoria, ilosc, cena_sprzedazy_netto, cena_sprzedazy_brutto
+		) as (select * from ordered_products($1));
+
+		update produkty ap 
+		set stan_biezacy = (
+			select bp.stan_biezacy - tt.ilosc
+			from produkty bp
+			join temp_table tt
+			on bp.nazwa = tt.nazwa
+			where bp.kod_kreskowy = ap.kod_kreskowy
+		) where ap.nazwa = any (select nazwa from temp_table); 
+
+		update zamowienia
+		set zrealizowane = true
+		where zamowienia.id_zamowienia = $1;
+
+		drop table temp_table;
+	end	
+$$ language plpgsql;
+
+
+CREATE OR REPLACE function create_invoice(int, formy_platnosci) returns void
+as
+$$
+	begin
+		create table temp_table(
+			wartosc_netto, wartosc_brutto
+		) as (select wartosc_netto, wartosc_brutto from order_details($1));
+
+		insert into faktury_sprzedazy values	
+		($1, 5, now(), (select wartosc_netto from temp_table), (select wartosc_brutto from temp_table), $2);
+
+		drop table temp_table;
+	end
+$$ language plpgsql;
 --CREATE or REPLACE function order()
 --VIEWS
+
 CREATE VIEW payments as
 SELECT
 	dy.nazwa_dostawcy,
