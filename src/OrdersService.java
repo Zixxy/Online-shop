@@ -18,7 +18,8 @@ public class OrdersService {
 	public void createInvoice(int number, String paymentForm) throws SQLException{
 		DBCommunicator.executeQuery(connection, "select create_invoice("+Integer.toString(number)+", " + paymentForm + ");");
 	}
-
+	
+	
 	public String selectOrders() throws SQLException{
 		ResultSet table = DBCommunicator.executeQuery(connection, "select * from zamowienia;");
 		if (!table.isBeforeFirst() ) {    

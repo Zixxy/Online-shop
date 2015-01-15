@@ -2,36 +2,44 @@
 <project name="SklepInternetowy" id="Project1014944" template="Default" database="MySql" >
 	<schema name="sklepinternetowy" schemaname="sklepinternetowy" defo="y" >
 		<table name="adresy" generator_rows="100" >
-			<column name="id_adres" type="int" jt="4" mandatory="y" autoincrement="y" />
 			<column name="ulica" type="varchar" length="20" jt="12" mandatory="y" />
 			<column name="miejscowosc" type="varchar" length="20" jt="12" mandatory="y" />
 			<column name="numer_domu" type="varchar" length="5" jt="12" mandatory="y" />
 			<column name="kod_pocztowy" type="char" length="6" jt="1" mandatory="y" />
+			<column name="login_użytkownika" type="varchar" length="20" jt="12" mandatory="y" />
+			<column name="id_adres" type="int" jt="4" mandatory="y" autoincrement="y" />
+			<index name="idx_adresy" unique="UNIQUE" >
+				<column name="login_użytkownika" />
+			</index>
 			<index name="pk_adresy" unique="PRIMARY_KEY" >
 				<column name="id_adres" />
 			</index>
+			<fk name="fk_adresy" to_schema="sklepinternetowy" to_table="konta_uzytkownicy" >
+				<fk_column name="login_użytkownika" pk="login" />
+			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
 		<table name="dostawcy" generator_rows="150" >
 			<column name="nazwa_dostawcy" type="varchar" length="40" jt="12" mandatory="y" />
 			<column name="nip" type="char" length="10" jt="1" />
-			<column name="adres" type="int" jt="4" mandatory="y" />
 			<column name="numer_konta" type="char" length="26" jt="1" />
 			<column name="parametry_dostawcy" type="varchar" length="100" jt="12" />
 			<index name="pk_dostawcy" unique="PRIMARY_KEY" >
 				<column name="nazwa_dostawcy" />
 			</index>
-			<index name="idx_dostawcy" unique="UNIQUE" >
-				<column name="adres" />
-			</index>
-			<fk name="fk_dostawcy" to_schema="sklepinternetowy" to_table="adresy" >
-				<fk_column name="adres" pk="id_adres" />
-			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
 		<table name="dostawy" >
 			<column name="id_dostawy" type="int" jt="4" mandatory="y" autoincrement="y" />
 			<column name="nazwa_dostawcy" type="varbinary" length="40" jt="-3" mandatory="y" />
+			<column name="nr_faktury" type="varchar" length="20" jt="12" />
+			<column name="data_wystawienia" type="date" jt="91" />
+			<column name="wartosc_netto" type="numeric" length="6" decimal="2" jt="2" unsigned="y" />
+			<column name="wartosc_brutto" type="numeric" length="6" decimal="2" jt="2" />
+			<column name="forma_platnosci" type="enum" jt="12" >
+				<enumeration>karta, gotówka, przelew</enumeration>
+			</column>
+			<column name="uregulowane" type="bool" jt="-7" />
 			<index name="pk_dostawy" unique="PRIMARY_KEY" >
 				<column name="id_dostawy" />
 			</index>
@@ -85,25 +93,6 @@
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
-		<table name="faktury_zakupow" >
-			<column name="id_dostawy" type="int" jt="4" mandatory="y" />
-			<column name="nr_faktury" type="varchar" length="20" jt="12" mandatory="y" />
-			<column name="data_wystawienia" type="date" jt="91" mandatory="y" >
-				<defo>CURRENT_DATE</defo>
-			</column>
-			<column name="wartosc_netto" type="numeric" length="12" decimal="2" jt="2" mandatory="y" />
-			<column name="wartosc_brutto" type="numeric" length="12" decimal="2" jt="2" mandatory="y" />
-			<column name="forma_platnosci" type="enum" length="45" jt="12" mandatory="y" >
-				<enumeration>karta, gotówka, przelew</enumeration>
-			</column>
-			<column name="uregulowane" type="bool" jt="-7" mandatory="y" />
-			<index name="pk_faktury_sprzedazy_0" unique="PRIMARY_KEY" >
-				<column name="id_dostawy" />
-			</index>
-			<fk name="fk_faktury_zakupow" to_schema="sklepinternetowy" to_table="dostawy" >
-				<fk_column name="id_dostawy" pk="id_dostawy" />
-			</fk>
-		</table>
 		<table name="kartoteka_towaru" >
 			<column name="kod_kreskowy" type="numeric" length="16" jt="2" mandatory="y" />
 			<column name="data_od" type="date" jt="91" mandatory="y" >
@@ -130,37 +119,12 @@
 			<column name="haslo" type="varchar" length="40" jt="12" mandatory="y" />
 			<column name="imie" type="varchar" length="20" jt="12" mandatory="y" />
 			<column name="nazwisko" type="varchar" length="20" jt="12" mandatory="y" />
-			<column name="adres" type="int" jt="4" />
 			<index name="pk_konta_uzytkownicy" unique="PRIMARY_KEY" >
 				<column name="login" />
-			</index>
-			<index name="idx_konta_uzytkownicy" unique="UNIQUE" >
-				<column name="adres" />
 			</index>
 			<constraint name="haslo_zalozenia" >
 				<string>char_length(haslo) &gt; 6</string>
 			</constraint>
-			<fk name="fk_konta_uzytkownicy" to_schema="sklepinternetowy" to_table="adresy" >
-				<fk_column name="adres" pk="id_adres" />
-			</fk>
-			<storage><![CDATA[engine=InnoDB]]></storage>
-		</table>
-		<table name="paragon" generator_rows="337" >
-			<column name="id_zamowienia" type="int" jt="4" mandatory="y" />
-			<column name="wartosc_netto" type="numeric" length="12" decimal="2" jt="2" mandatory="y" />
-			<column name="wartosc_brutto" type="numeric" length="12" decimal="2" jt="2" mandatory="y" />
-			<column name="forma_platnosci" type="enum" length="20" jt="12" mandatory="y" >
-				<enumeration>karta, gotówka, przelew</enumeration>
-			</column>
-			<index name="pk_paragon" unique="PRIMARY_KEY" >
-				<column name="id_zamowienia" />
-			</index>
-			<constraint name="ck_2" >
-				<string>wartosc_netto&lt;wartosc_brutto</string>
-			</constraint>
-			<fk name="fk_paragon" to_schema="sklepinternetowy" to_table="zamowienia" >
-				<fk_column name="id_zamowienia" pk="id_zamowienia" />
-			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
 		<table name="produkty" generator_rows="225" >
@@ -189,7 +153,9 @@
 		<table name="zamowienia" generator_rows="225" >
 			<column name="id_zamowienia" type="int" jt="4" mandatory="y" autoincrement="y" />
 			<column name="login_klienta" type="varchar" length="20" jt="12" mandatory="y" />
-			<column name="zrealizowane" type="bool" jt="-7" mandatory="y" />
+			<column name="stan_realizacji" type="enum" jt="12" mandatory="y" >
+				<enumeration>oczekuje, anulowane, zrealizowane</enumeration>
+			</column>
 			<column name="data_zlozenia" type="date" jt="91" mandatory="y" >
 				<defo>CURRENT_DATE</defo>
 			</column>
@@ -207,7 +173,7 @@
 				<fk_column name="login_klienta" pk="login" />
 			</fk>
 			<fk name="fk_zamowienia_0" to_schema="sklepinternetowy" to_table="adresy" >
-				<fk_column name="adres" pk="id_adres" />
+				<fk_column name="adres" pk="login_użytkownika" />
 			</fk>
 			<storage><![CDATA[engine=InnoDB]]></storage>
 		</table>
@@ -235,17 +201,98 @@
 		</table>
 	</schema>
 	<layout id="Layout1014946" name="SklepInternetowy" show_relation_columns="y" >
-		<entity schema="sklepinternetowy" name="adresy" color="b2cdf7" x="45" y="255" />
-		<entity schema="sklepinternetowy" name="paragon" color="b2cdf7" x="630" y="225" />
-		<entity schema="sklepinternetowy" name="faktury_sprzedazy" color="b2cdf7" x="705" y="60" />
-		<entity schema="sklepinternetowy" name="konta_uzytkownicy" color="b2cdf7" x="75" y="45" />
-		<entity schema="sklepinternetowy" name="dostawy" color="b2cdf7" x="360" y="615" />
-		<entity schema="sklepinternetowy" name="faktury_zakupow" color="b2cdf7" x="585" y="570" />
 		<entity schema="sklepinternetowy" name="dostawy_produkty" color="b2cdf7" x="285" y="480" />
-		<entity schema="sklepinternetowy" name="kartoteka_towaru" color="b2cdf7" x="720" y="360" />
-		<entity schema="sklepinternetowy" name="dostawcy" color="b2cdf7" x="45" y="510" />
 		<entity schema="sklepinternetowy" name="produkty" color="b2cdf7" x="480" y="375" />
-		<entity schema="sklepinternetowy" name="zamowienia" color="b2cdf7" x="315" y="45" />
+		<entity schema="sklepinternetowy" name="dostawcy" color="b2cdf7" x="45" y="510" />
+		<entity schema="sklepinternetowy" name="dostawy" color="b2cdf7" x="390" y="585" />
+		<entity schema="sklepinternetowy" name="kartoteka_towaru" color="b2cdf7" x="720" y="360" />
 		<entity schema="sklepinternetowy" name="zamowienia_produkty" color="b2cdf7" x="300" y="255" />
+		<entity schema="sklepinternetowy" name="faktury_sprzedazy" color="b2cdf7" x="570" y="45" />
+		<entity schema="sklepinternetowy" name="konta_uzytkownicy" color="b2cdf7" x="75" y="45" />
+		<entity schema="sklepinternetowy" name="adresy" color="b2cdf7" x="60" y="225" />
+		<entity schema="sklepinternetowy" name="zamowienia" color="b2cdf7" x="315" y="45" />
+		<script name="adresy" id="SQL305133" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.adresy ( 
+	id_adres             int  NOT NULL  AUTO_INCREMENT,
+	ulica                varchar(20)  NOT NULL  ,
+	miejscowosc          varchar(20)  NOT NULL  ,
+	numer_domu           varchar(5)  NOT NULL  ,
+	kod_pocztowy         char(6)  NOT NULL  ,
+	login_użytkownika    varchar(20)  NOT NULL  ,
+	CONSTRAINT pk_adresy PRIMARY KEY ( id_adres )
+ ) engine=InnoDB;
+
+CREATE INDEX idx_adresy ON sklepinternetowy.adresy ( login_użytkownika );
+
+ALTER TABLE sklepinternetowy.adresy ADD CONSTRAINT fk_adresy FOREIGN KEY ( login_użytkownika ) REFERENCES sklepinternetowy.konta_uzytkownicy( login ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="adresy_001" id="SQL1994569" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.adresy ( 
+	ulica                varchar(20)  NOT NULL  ,
+	miejscowosc          varchar(20)  NOT NULL  ,
+	numer_domu           varchar(5)  NOT NULL  ,
+	kod_pocztowy         char(6)  NOT NULL  ,
+	login_użytkownika    varchar(20)  NOT NULL  ,
+	CONSTRAINT idx_adresy UNIQUE ( login_użytkownika ) ,
+	CONSTRAINT pk_adresy PRIMARY KEY ( login_użytkownika )
+ ) engine=InnoDB;
+
+ALTER TABLE sklepinternetowy.adresy ADD CONSTRAINT fk_adresy FOREIGN KEY ( login_użytkownika ) REFERENCES sklepinternetowy.konta_uzytkownicy( login ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="adresy_002" id="SQL2572611" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.adresy ( 
+	ulica                varchar(20)  NOT NULL  ,
+	miejscowosc          varchar(20)  NOT NULL  ,
+	numer_domu           varchar(5)  NOT NULL  ,
+	kod_pocztowy         char(6)  NOT NULL  ,
+	login_użytkownika    varchar(20)  NOT NULL  ,
+	id_adres             int  NOT NULL  AUTO_INCREMENT,
+	CONSTRAINT idx_adresy UNIQUE ( login_użytkownika ) ,
+	CONSTRAINT pk_adresy PRIMARY KEY ( id_adres )
+ ) engine=InnoDB;
+
+ALTER TABLE sklepinternetowy.adresy ADD CONSTRAINT fk_adresy FOREIGN KEY ( login_użytkownika ) REFERENCES sklepinternetowy.konta_uzytkownicy( login ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
+		<script name="konta_uzytkownicy" id="SQL2245614" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.konta_uzytkownicy ( 
+	login                varchar(20)  NOT NULL  ,
+	haslo                varchar(40)  NOT NULL  ,
+	imie                 varchar(20)  NOT NULL  ,
+	nazwisko             varchar(20)  NOT NULL  ,
+	adres                int    ,
+	CONSTRAINT pk_konta_uzytkownicy PRIMARY KEY ( login ),
+	CONSTRAINT idx_konta_uzytkownicy UNIQUE ( adres ) 
+ ) engine=InnoDB;
+
+ALTER TABLE sklepinternetowy.konta_uzytkownicy ADD CONSTRAINT haslo_zalozenia CHECK ( char_length(haslo) > 6 );
+
+]]></string>
+		</script>
+		<script name="zamowienia" id="SQL4314887" >
+			<string><![CDATA[CREATE TABLE sklepinternetowy.zamowienia ( 
+	id_zamowienia        int  NOT NULL  AUTO_INCREMENT,
+	login_klienta        varchar(20)  NOT NULL  ,
+	stan_realizacji      enum(oczekuje, anulowane, zrealizowane)   NOT NULL  ,
+	data_zlozenia        date  NOT NULL DEFAULT CURRENT_DATE ,
+	adres                int  NOT NULL  ,
+	CONSTRAINT pk_zamowienia PRIMARY KEY ( id_zamowienia )
+ ) engine=InnoDB;
+
+CREATE INDEX idx_zamowienia ON sklepinternetowy.zamowienia ( login_klienta );
+
+CREATE INDEX idx_zamowienia_0 ON sklepinternetowy.zamowienia ( adres );
+
+ALTER TABLE sklepinternetowy.zamowienia ADD CONSTRAINT fk_zamowienia FOREIGN KEY ( login_klienta ) REFERENCES sklepinternetowy.konta_uzytkownicy( login ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+ALTER TABLE sklepinternetowy.zamowienia ADD CONSTRAINT fk_zamowienia_0 FOREIGN KEY ( adres ) REFERENCES sklepinternetowy.adresy( login_użytkownika ) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+]]></string>
+		</script>
 	</layout>
 </project>

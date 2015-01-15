@@ -1,30 +1,31 @@
-CREATE TYPE formy_platnosci AS ENUM ('sad', 'ok', 'happy');
-CREATE TYPE sale_document AS ENUM('faktura', 'paragon');
+CREATE TYPE formy_platnosci AS ENUM ('karta', 'paragon');
+CREATE TYPE realization_state AS ENUM('oczekuje', 'anulowane', 'zrealizowane');
+
 CREATE TYPE order_worth as(
 	order_id integer,
 	net_value numeric(8,2),
 	gross_value numeric(8,2)
 );
 
-CREATE TABLE adresy ( 
-	id_adres             serial PRIMARY KEY,
+CREATE TABLE konta_uzytkownicy ( 
+	login                varchar(20)  NOT NULL  ,
+	haslo                varchar(40)  NOT NULL  ,
+	imie                 varchar(20)  NOT NULL  ,
+	nazwisko             varchar(20)  NOT NULL  ,
+	CONSTRAINT pk_login PRIMARY KEY ( login ),
+	CONSTRAINT haslo_zalozenia CHECK ( char_length(haslo) > 6 )
+ );
+
+CREATE TABLE adresy (
+	id_adres             serial  NOT NULL,
+	login_użytkownika    varchar(20)  NOT NULL,
 	ulica                varchar(20)  NOT NULL,
 	miejscowosc          varchar(20)  NOT NULL,
-	numer_domu           varchar(10) NOT NULL,
+	numer_domu           varchar(5)  NOT NULL,
 	kod_pocztowy         char(6)  NOT NULL,
-	CONSTRAINT unique_address UNIQUE(ulica, miejscowosc, numer_domu, kod_pocztowy)
+	CONSTRAINT pk_adresy PRIMARY KEY ( id_adres ),
+ 	CONSTRAINT fk_adresy FOREIGN KEY ( login_użytkownika ) REFERENCES konta_uzytkownicy(login)
  );
-
-CREATE TABLE konta_uzytkownicy ( 
-	login                varchar(20)  NOT NULL,
-	haslo                char(36)  NOT NULL,
-	imie                 varchar(20)  NOT NULL,
-	nazwisko             varchar(20)  NOT NULL,
-	adres                int,
-	CONSTRAINT pk_login PRIMARY KEY ( login ),
-	CONSTRAINT fk_adres FOREIGN KEY ( adres ) REFERENCES adresy( id_adres )
- );
-
 
 CREATE TABLE zamowienia ( 
 	id_zamowienia        serial  NOT NULL ,
@@ -32,10 +33,11 @@ CREATE TABLE zamowienia (
 	zrealizowane         bool  NOT NULL,
 	data_zlozenia        date  NOT NULL DEFAULT NOW(),
 	adres    			 int  NOT NULL,
+	stan_realizacji		 realization_state NOT NULL,
 	CONSTRAINT pk_zamowienia PRIMARY KEY ( id_zamowienia ),
 	CONSTRAINT fk_konta_uzytkownicy FOREIGN KEY ( login_klienta ) REFERENCES konta_uzytkownicy( login ),
 	CONSTRAINT fk_adresy FOREIGN KEY ( adres ) REFERENCES adresy( id_adres )
- );
+);
 
 CREATE TABLE faktury_sprzedazy ( 
 	id_zamowienia        int  NOT NULL,
@@ -45,27 +47,15 @@ CREATE TABLE faktury_sprzedazy (
 	wartosc_brutto       numeric(12,2)  NOT NULL,
 	forma_platnosci      formy_platnosci NOT NULL,
 	CONSTRAINT pk_faktury_sprzedazy PRIMARY KEY ( id_zamowienia ),
- 	CONSTRAINT fk_faktury_sprzedazy FOREIGN KEY (id_zamowienia) REFERENCES zamowienia( id_zamowienia )
- );
-
-CREATE TABLE paragon ( 
-	id_zamowienia        int  NOT NULL,
-	wartosc_netto        numeric(12,2)  NOT NULL,
-	wartosc_brutto       numeric(12,2)  NOT NULL,
-	forma_platnosci      formy_platnosci NOT NULL,
-	CONSTRAINT pk_paragon PRIMARY KEY ( id_zamowienia ),
-	CONSTRAINT fk_paragon FOREIGN KEY ( id_zamowienia ) REFERENCES zamowienia( id_zamowienia )
+ 	CONSTRAINT fk_faktury_sprzedazy FOREIGN KEY ( id_zamowienia ) REFERENCES zamowienia( id_zamowienia )
  );
 
 CREATE TABLE dostawcy ( 
 	nazwa_dostawcy       varchar(40)  NOT NULL,
 	nip                  char(10) NOT NULL,
-	adres                int  NOT NULL,
 	numer_konta          char(26),
-	parametry_dostawcy   varchar(100), -- to learn.
-	CONSTRAINT pk_dostawcy PRIMARY KEY ( nazwa_dostawcy ),
-	CONSTRAINT idx_dostawcy UNIQUE ( adres ),
- 	CONSTRAINT fk_dostawcy FOREIGN KEY ( adres ) REFERENCES adresy( id_adres )
+	parametry_dostawcy   varchar(100), -- to ask
+	CONSTRAINT pk_dostawcy PRIMARY KEY ( nazwa_dostawcy )
 );
 
 CREATE TABLE produkty ( 
@@ -94,8 +84,6 @@ CREATE TABLE kartoteka_towaru (
 	cena_zakupu_netto    numeric(8,2),
 	cena_sprzedazy_netto numeric(8,2),
 	vat                  int,
-	CONSTRAINT ck_5 CHECK ( cena_zakupu_netto < cena_sprzedazy_netto),
-	CONSTRAINT ck_4	 CHECK ( vat in (0, 5, 7, 8, 23)), 
 	CONSTRAINT fk_kartoteka_towaru FOREIGN KEY ( kod_kreskowy ) REFERENCES produkty( kod_kreskowy ),
 	CONSTRAINT pk_kartoteka_towaru PRIMARY KEY ( kod_kreskowy, data_od )
  );
@@ -103,6 +91,11 @@ CREATE TABLE kartoteka_towaru (
 CREATE TABLE dostawy ( 
 	id_dostawy           serial  NOT NULL,
 	nazwa_dostawcy       varchar(40)  NOT NULL,
+	nr_faktury           varchar(20)  NOT NULL,
+	data_wystawienia_faktury     date  NOT NULL,
+	wartosc_netto        numeric(12,2)  NOT NULL,
+	wartosc_brutto       numeric(12,2)  NOT NULL,
+	uregulowane			 bool NOT NULL,
 	CONSTRAINT pk_dostawy PRIMARY KEY ( id_dostawy ),
 	CONSTRAINT fk_dostawy FOREIGN KEY ( nazwa_dostawcy ) REFERENCES dostawcy( nazwa_dostawcy ) 
  );
@@ -118,17 +111,6 @@ CREATE TABLE dostawy_produkty (
 	CONSTRAINT pk_dostawy_produkty PRIMARY KEY ( id_dostawy, kod_produktu ),
 	CONSTRAINT fk_dostawy_produkty FOREIGN KEY ( id_dostawy ) REFERENCES dostawy( id_dostawy ),
 	CONSTRAINT fk_dostawy_produkty_0 FOREIGN KEY ( kod_produktu ) REFERENCES produkty( kod_kreskowy )
- );
-
-CREATE TABLE faktury_zakupow ( 
-	id_dostawy           int  NOT NULL,
-	nr_faktury           varchar(20)  NOT NULL,
-	data_wystawienia     date  NOT NULL,
-	wartosc_netto        numeric(12,2)  NOT NULL,
-	wartosc_brutto       numeric(12,2)  NOT NULL,
-	uregulowane			 bool NOT NULL,
-	CONSTRAINT pk_faktury_sprzedazy_0 PRIMARY KEY ( id_dostawy ) ,
-	CONSTRAINT fk_faktury_zakupow FOREIGN KEY ( id_dostawy ) REFERENCES dostawy( id_dostawy ) 
  );
 
 CREATE INDEX idx_dostawy_produkty ON dostawy_produkty ( kod_produktu );
@@ -198,7 +180,7 @@ CREATE OR REPLACE function update_magazine_state() returns trigger as $update_ma
 $update_magazine_state$ language plpgsql;
 
 CREATE TRIGGER insert_dostawy_produkty BEFORE INSERT OR UPDATE ON dostawy_produkty
-FOR EACH ROW EXECUTE PROCEDURE update_magazine_state();
+FOR EACH ROW EXECUTE PROCEDURE update_magazine_state(); --dodając dostawę powiększamy magazyn
 
 CREATE OR REPLACE function insert_invoice() returns trigger as $insert_invoice$
 	declare prev_num int;
@@ -225,7 +207,7 @@ CREATE OR REPLACE function insert_invoice() returns trigger as $insert_invoice$
 $insert_invoice$ language plpgsql;
 
 CREATE TRIGGER insert_faktury_sprzedazy BEFORE INSERT OR UPDATE ON faktury_sprzedazy
-FOR EACH ROW EXECUTE PROCEDURE insert_invoice();
+FOR EACH ROW EXECUTE PROCEDURE insert_invoice(); --każdy kolejny numer faktury jest o 1 większy niż poprzedni. Co roku licznik zerujemy i na nowo numerujemy od 1.
 
 --functions
 
@@ -240,8 +222,8 @@ $$ language sql;
 
 
 CREATE or replace function ordered_products(int) returns 
-table(nazwa varchar(40),kategoria varchar(40),
-ilosc int, cena_sprzedazy_netto numeric(8,2),
+table(nazwa varchar(40), kategoria varchar(40),
+ilosc int, cena_sprzedazy_netto numeric(8,2), --podaje cenę jaka obowiązywała w momencie złożenia zamówienia. (Ewentualna zmiana w górę z różnych przyczyn będzie skutkowała zmianą statusu zamówienia na anulowane.)
 cena_sprzedazy_brutto numeric(8,2), vat int)
 as
 $$
@@ -258,7 +240,8 @@ $$
 	on zamowienia_produkty.produkt = produkty.kod_kreskowy
 	join kartoteka_towaru
 	on kartoteka_towaru.kod_kreskowy = produkty.kod_kreskowy
-	and kartoteka_towaru.data_do is null --price spaces until now
+	and (zamowienia.data_zlozenia >= kartoteka_towaru.data_od) 
+	and (kartoteka_towaru.data_do is null or kartoteka_towaru.data_do > zamowienia.data_zlozenia) --price spaces until now
 	where zamowienia.id_zamowienia = $1;
 $$ language sql;
 
@@ -274,11 +257,11 @@ $$
 	z.data_zlozenia,
 	z.zrealizowane, (
 		select 
-			sum(cena_sprzedazy_netto)
+			sum(cena_sprzedazy_netto * ilosc)
 		from ordered_products($1)
 		) as wartosc_netto, (
 		select
-			sum(cena_sprzedazy_brutto)
+			sum(cena_sprzedazy_brutto * ilosc)
 		from ordered_products($1)
 		) as wartosc_brutto
 	from zamowienia z
@@ -289,7 +272,7 @@ $$
 	where z.id_zamowienia = $1
 $$ language sql;
 
-CREATE or REPLACE function add_delivery(varchar, numeric(16)[], int[], numeric(16,2)[], int[],data date,numer_faktury varchar)
+CREATE or REPLACE function add_delivery(varchar, numeric(16)[], int[], numeric(16,2)[], int[],invoice_date date,numer_faktury varchar)
 returns void
 as 
 $$
@@ -308,23 +291,28 @@ $$
 			end if;
 		end loop;
 		
-		insert into dostawy(nazwa_dostawcy) values
-			($1);
-		select into id currval('dostawy_id_dostawy_seq');
 		foreach product_code in ARRAY $2 loop
-			net_value := net_value + $4[iterator];
-			gross_value := gross_value + $4[iterator]*(1+($5[iterator]::numeric(8,2) / 100));
+			net_value := net_value + $4[iterator]*$3[iterator];--wartość netto * ilość
+			gross_value := gross_value + $4[iterator]*(1+($5[iterator]::numeric(8,2) / 100))*$3[iterator];--wartość brutto * ilość
+			iterator := iterator + 1;
+		end loop;
+		
+		insert into dostawy(nazwa_dostawcy, nr_faktury, data_wystawienia_faktury, wartosc_netto, wartosc_brutto, uregulowane) values
+			($1, numer_faktury, invoice_date, net_value, gross_value, false);
+
+		select into id currval('dostawy_id_dostawy_seq');
+
+		iterator := 1;
+		foreach product_code in ARRAY $2 loop
 			insert into dostawy_produkty(id_dostawy, kod_produktu, ilosc, cena_netto) values
 			(id, product_code, $3[iterator], $4[iterator]);
 			iterator := iterator + 1;
 		end loop;
-		insert into faktury_zakupow(id_dostawy, nr_faktury, data_wystawienia, wartosc_netto, wartosc_brutto, uregulowane) values
-		(id, numer_faktury, data, net_value, gross_value, false);
 	end
 $$ language plpgsql;
 
 CREATE OR REPLACE function prepare_order(customer varchar,products numeric(16)[],amount int[], 
-	address int, order_date date) 
+	address int, order_date date) --przygotowuje zamówienie z datą obecną
 returns order_worth
 as
 $$	
@@ -334,6 +322,7 @@ $$
 	declare net_value numeric(8,2) := 0;
 	declare gross_value numeric(8,2) := 0;
 	declare result order_worth;
+	declare order_date date := now();
 begin
 	if (select customer from konta_uzytkownicy where  customer = konta_uzytkownicy.login) is NULL
 		then raise exception 'No such customer in database';
@@ -343,8 +332,8 @@ begin
 			then raise exception 'No such product in database';
 		end if;
 	end loop;
-	insert into zamowienia(login_klienta, zrealizowane, data_zlozenia, adres) values
-	(customer, false, order_date, address);
+	insert into zamowienia(login_klienta, zrealizowane, data_zlozenia, adres, stan_realizacji) values
+	(customer, false, order_date, address, 'oczekuje');
 	select into id currval('zamowienia_id_zamowienia_seq');
 
 	foreach product in ARRAY products loop
@@ -368,7 +357,7 @@ begin
 end
 $$ language plpgsql;
 
-CREATE OR REPLACE function execute_order(int) returns void
+CREATE OR REPLACE function execute_order(int) returns void --realizujemy zamówienie. (uznajemy za sprzedane ale nie wystawiamy faktury!! Robi to osobna funkcja, która powinna być wywołana przed tą.)
 as 
 $$
 	begin
@@ -386,7 +375,7 @@ $$
 		) where ap.nazwa = any (select nazwa from temp_table); 
 
 		update zamowienia
-		set zrealizowane = true
+		set zrealizowane = 'zrealizowane'
 		where zamowienia.id_zamowienia = $1;
 
 		drop table temp_table;
@@ -394,13 +383,25 @@ $$
 $$ language plpgsql;
 
 
-CREATE OR REPLACE function create_invoice(int, formy_platnosci) returns void
+CREATE OR REPLACE function create_invoice(int, formy_platnosci) returns void --wystawia fakturę za towar, dodatkowo sprawdza czy cena wystawiona teraz pokrywa się lub jest niższa od ceny z momentu założenia zamówienia(zakładamy że klient się ucieszy z ewentualnego upustu). Wpp rzuca wyjątkiem.
 as
 $$
+	declare current_worth numeric(8,2);
 	begin
 		create table temp_table(
 			wartosc_netto, wartosc_brutto
 		) as (select wartosc_netto, wartosc_brutto from order_details($1));
+
+		current_worth = (select sum(kartoteka_towaru.cena_sprzedazy_netto*(100+vat::numeric(8,2))*zamowienia_produkty.ilosc)
+		from zamowienia
+		join zamowienia_produkty
+		on zamowienia_produkty.id_zamowienia = zamowienia.id_zamowienia
+		join produkty
+		on zamowienia_produkty.produkt = produkty.kod_kreskowy
+		join kartoteka_towaru
+		on kartoteka_towaru.kod_kreskowy = produkty.kod_kreskowy
+		and kartoteka_towaru.data_do is null --price spaces until now
+		where zamowienia.id_zamowienia = $1);
 
 		insert into faktury_sprzedazy values	
 		($1, 5, now(), (select wartosc_netto from temp_table), (select wartosc_brutto from temp_table), $2);
@@ -415,16 +416,14 @@ CREATE VIEW payments as
 SELECT
 	dy.nazwa_dostawcy,
 	dy.numer_konta,
-	f.nr_faktury,
-	f.data_wystawienia,
-	f.wartosc_netto,
-	f.wartosc_brutto
-FROM faktury_zakupow f
-JOIN dostawy d 
-on d.id_dostawy = f.id_dostawy
+	d.nr_faktury,
+	d.data_wystawienia_faktury,
+	d.wartosc_netto,
+	d.wartosc_brutto
+FROM dostawy d
 JOIN dostawcy dy 
 on d.nazwa_dostawcy = dy.nazwa_dostawcy
-where f.uregulowane; 
+where d.uregulowane; 
 
 CREATE VIEW product_current_state as
 SELECT
