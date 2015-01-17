@@ -13,6 +13,7 @@ public final class DBCommunicator {
 		while(set.next()){
 			for(int i = 1; i <= columns; ++i)
 				result.append(set.getString(i)+" | ");
+			result.append("\n");
 		}
 		return result.toString();
 	}
