@@ -413,6 +413,7 @@ $$ language plpgsql;
 
 CREATE VIEW payments as
 SELECT
+	d.id_dostawy,
 	dy.nazwa_dostawcy,
 	dy.numer_konta,
 	d.nr_faktury,
@@ -422,7 +423,7 @@ SELECT
 FROM dostawy d
 JOIN dostawcy dy 
 on d.nazwa_dostawcy = dy.nazwa_dostawcy
-where d.uregulowane; 
+where d.uregulowane = false; 
 
 CREATE VIEW product_current_state as
 SELECT
