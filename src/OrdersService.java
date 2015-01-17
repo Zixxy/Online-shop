@@ -57,4 +57,18 @@ public class OrdersService {
 		}
 		return DBCommunicator.readTable(table, 6);
 	}
+
+	public void realizeOrder(int order, String payment_form) throws SQLException{
+		try {
+			DBCommunicator.execute(connection, 
+					"BEGIN; select " + "create_invoice("+Integer.toString(order)+", '" + payment_form + "');" +
+					"select " + "execute_order(" + Integer.toString(order)+ "); " + "COMMIT;");
+			
+		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {}
+			throw e;
+		}
+	}
 }

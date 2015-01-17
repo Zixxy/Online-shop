@@ -30,7 +30,6 @@ CREATE TABLE adresy (
 CREATE TABLE zamowienia ( 
 	id_zamowienia        serial  NOT NULL ,
 	login_klienta        varchar(20)  NOT NULL,
-	zrealizowane         bool  NOT NULL,
 	data_zlozenia        date  NOT NULL DEFAULT NOW(),
 	adres    			 int  NOT NULL,
 	stan_realizacji		 realization_state NOT NULL,
@@ -249,13 +248,12 @@ $$ language sql;
 CREATE or replace function order_details(int) returns table(
 	imie varchar, nazwisko varchar, ulica varchar, miejscowosc varchar, 
 	numer_domu varchar, kod_pocztowy char(6), data_zlozenia date,
-	zrealizowane bool, wartosc_netto numeric(8,2), wartosc_brutto numeric(8,2)
+	stan_realizacji realization_state, wartosc_netto numeric(8,2), wartosc_brutto numeric(8,2)
 )
 as
 $$
 	select ku.imie, ku.nazwisko, a.ulica, a.miejscowosc, a.numer_domu, a.kod_pocztowy,
-	z.data_zlozenia,
-	z.zrealizowane, (
+	z.data_zlozenia, z.stan_realizacji, (
 		select 
 			sum(cena_sprzedazy_netto * ilosc)
 		from ordered_products($1)
@@ -332,8 +330,8 @@ begin
 			then raise exception 'No such product in database';
 		end if;
 	end loop;
-	insert into zamowienia(login_klienta, zrealizowane, data_zlozenia, adres, stan_realizacji) values
-	(customer, false, order_date, address, 'oczekuje');
+	insert into zamowienia(login_klienta, data_zlozenia, adres, stan_realizacji) values
+	(customer, order_date, address, 'oczekuje');
 	select into id currval('zamowienia_id_zamowienia_seq');
 
 	foreach product in ARRAY products loop
@@ -375,7 +373,7 @@ $$
 		) where ap.nazwa = any (select nazwa from temp_table); 
 
 		update zamowienia
-		set zrealizowane = 'zrealizowane'
+		set stan_realizacji = 'zrealizowane'
 		where zamowienia.id_zamowienia = $1;
 
 		drop table temp_table;
@@ -403,12 +401,13 @@ $$
 		and kartoteka_towaru.data_do is null --price spaces until now
 		where zamowienia.id_zamowienia = $1);
 
-		insert into faktury_sprzedazy values	
+		insert into faktury_sprzedazy(id_zamowienia, nr_faktury, data_wystawienia, wartosc_netto, wartosc_brutto, forma_platnosci) values	
 		($1, 5, now(), (select wartosc_netto from temp_table), (select wartosc_brutto from temp_table), $2);
 
 		drop table temp_table;
 	end
 $$ language plpgsql;
+--test	
 --CREATE or REPLACE function order()
 --VIEWS
 
