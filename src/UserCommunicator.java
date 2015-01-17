@@ -16,13 +16,19 @@ public class UserCommunicator implements Runnable {
 	private static final String REALIZE = "zrealizuj";
 	private static final String PAYMENTS = "platnosci";
 	private static final String PAY = "zaplac";
+	private static final String PROVIDERS = "dostawcy";
+	private static final String DLIEVERY = "dostawa";
+	private static final String ADD = "dodaj";
 	
 	private OrdersService ordersService;
 	private Payments payments;
+	private DelieveryService delieveries;
+	
 	public UserCommunicator(Connection connection){
 		this.connection = connection;
 		ordersService = new OrdersService(connection);
 		payments = new Payments(connection);
+		delieveries = new DelieveryService(connection);
 	}
 	
 	@Override
@@ -34,7 +40,7 @@ public class UserCommunicator implements Runnable {
 			System.out.println("Wykonaj: ");
 			String line = inputScanner.nextLine();
 			try {
-				handleInput (line);
+				handleInput (line, inputScanner);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -52,7 +58,7 @@ public class UserCommunicator implements Runnable {
 		}
 	}
 	
-	public void handleInput(String line) throws SQLException{
+	public void handleInput(String line,Scanner inputScanner) throws SQLException{
 		if(line == null)
 			return;
 		if(line.equals(EXIT)){
@@ -67,12 +73,39 @@ public class UserCommunicator implements Runnable {
 		case PAYMENTS:
 			executePayment(request);
 			break;
+		case PROVIDERS:
+			operateOnProviders(request, inputScanner);
+			break;
+		case DLIEVERY:
+			operateOnDelieveries(request, inputScanner);
+			break;
 		case EXIT:
 			exit();
 			return;
 		}
 	}
-	
+	public void operateOnDelieveries(String[] request, Scanner inputScanner){
+		if(request.length == 1){
+			//todo
+			return;
+		}
+		switch(request[1]){
+		case ADD: 
+			delieveries.addDelieveryFromConsole(inputScanner);
+			break;
+		default:
+			return;
+		}
+	}
+	public void operateOnProviders(String[] request, Scanner inputScanner) throws SQLException {
+		if(request.length == 1){
+			System.out.println(delieveries.selectProviders());
+			return;
+		}
+		if(request[1].equals(ADD))
+			delieveries.addProviderFromConsole(inputScanner);
+	}
+
 	public void executePayment(String[] request) throws SQLException {
 		if(request.length == 1){
 			System.out.println(payments.selectPayments());
@@ -86,29 +119,29 @@ public class UserCommunicator implements Runnable {
 			}
 		}
 	}
-	
+
 	public void executeOrder(String[] request) throws SQLException{
 		if(request.length == 1){
 			System.out.println(ordersService.selectOrders());
 			return;
 		}
 		switch(request[1]){
-			case NOT_REALIZED:
-				System.out.println(ordersService.selectUnrealizedOrders());
-			case DETAILS:
-				System.out.println(ordersService.selectOrderDetails(Integer.parseInt(request[2])));
-			case PRODUCTS:
-				System.out.println(ordersService.selectOrderedProducts(Integer.parseInt(request[2])));
-			case REALIZE:
-				try{
-					ordersService.realizeOrder(Integer.parseInt(request[2]), request[3]);
-					System.out.println("Ok.");
-				} catch (SQLException e) {
-					e.printStackTrace();
-					System.out.println("Error.");
-				}
+		case NOT_REALIZED:
+			System.out.println(ordersService.selectUnrealizedOrders());
+		case DETAILS:
+			System.out.println(ordersService.selectOrderDetails(Integer.parseInt(request[2])));
+		case PRODUCTS:
+			System.out.println(ordersService.selectOrderedProducts(Integer.parseInt(request[2])));
+		case REALIZE:
+			try{
+				ordersService.realizeOrder(Integer.parseInt(request[2]), request[3]);
+				System.out.println("Ok.");
+			} catch (SQLException e) {
+				e.printStackTrace();
+				System.out.println("Error.");
+			}
 			break;
-			default:
+		default:
 				System.out.println("Wrong query.");
 		}
 	}
