@@ -63,11 +63,10 @@ public class OrdersService {
 			DBCommunicator.execute(connection, 
 					"BEGIN; select " + "create_invoice("+Integer.toString(order)+", '" + payment_form + "');" +
 					"select " + "execute_order(" + Integer.toString(order)+ "); " + "COMMIT;");
-			
 		} catch (SQLException e) {
 			try {
 				connection.rollback();
-			} catch (SQLException e1) {}
+			} catch (SQLException e1) {} // not need to printstacktrace due to begin; ... commit; statement above.
 			throw e;
 		}
 	}

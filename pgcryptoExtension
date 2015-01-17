@@ -1,0 +1,8 @@
+
+CREATE EXTENSION pgcrypto; --use it as superuser. 
+--Do in terminal:
+-- 1.sudo apt-get install postgresql-contrib
+-- 2.sudo su postgresql
+-- 3.psql dbname
+-- 4.CREATE EXTENSION pgcrypto;
+-- Got it!.
