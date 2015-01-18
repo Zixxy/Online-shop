@@ -73,8 +73,4 @@ public class AccountsService {
 			e.printStackTrace();
 		}
 	}
-	/*
-	 * insert into konta_uzytkownicy values
-('user1','haselko12', 'janb', 'kowali'),
-	 */
 }

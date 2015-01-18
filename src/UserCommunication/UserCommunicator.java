@@ -7,6 +7,7 @@ import Services.AccountsService;
 import Services.DelieveryService;
 import Services.OrdersService;
 import Services.Payments;
+import Services.ProductsService;
 
 
 public class UserCommunicator implements Runnable {
@@ -26,11 +27,13 @@ public class UserCommunicator implements Runnable {
 	private static final String DLIEVERY = "dostawa";
 	private static final String ADD = "dodaj";
 	private static final String ACCOUNT = "konto";
+	private static final String PRODUCT = "produkty";
 	
 	private OrdersService ordersService;
 	private Payments payments;
 	private DelieveryService delieveries;
 	private AccountsService accounts;
+	private ProductsService products;
 	
 	public UserCommunicator(Connection connection){
 		this.connection = connection;
@@ -38,6 +41,7 @@ public class UserCommunicator implements Runnable {
 		payments = new Payments(connection);
 		delieveries = new DelieveryService(connection);
 		accounts = new AccountsService(connection);
+		products = new ProductsService(connection);
 	}
 	
 	@Override
@@ -91,15 +95,29 @@ public class UserCommunicator implements Runnable {
 		case ACCOUNT:
 			accountOperations(request, inputScanner);
 			break;
+		case PRODUCT:
+			productsOperations(request, inputScanner);
+			break;
 		case EXIT:
 			exit();
 			return;
 		}
 	}
-	
+	public void productsOperations(String[] request, Scanner inputScanner)  throws SQLException{
+		if(request.length == 1) {
+			System.out.println(products.selectProductsCurrentState());
+			return;
+		}
+		switch(request[1]){
+		case ADD:
+			products.addProductFromConsole(inputScanner);
+			break;
+			
+		}
+	}
 	public void accountOperations(String[] request, Scanner inputScanner) throws SQLException{
 		if(request.length == 1) {
-			accounts.selectAccounts();
+			System.out.println(accounts.selectAccounts());
 			return;
 		}
 		
@@ -123,6 +141,7 @@ public class UserCommunicator implements Runnable {
 			return;
 		}
 	}
+	
 	public void operateOnProviders(String[] request, Scanner inputScanner) throws SQLException {
 		if(request.length == 1){
 			System.out.println(delieveries.selectProviders());

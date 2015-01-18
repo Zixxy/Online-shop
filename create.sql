@@ -407,6 +407,26 @@ $$
 		drop table temp_table;
 	end
 $$ language plpgsql;
+
+CREATE OR REPLACE function updateProductPrice(kod numeric(16), sell_pirce numeric(16,2),buy_price numeric(16,2), vat int) returns void
+as
+$$
+	declare existance int;
+	begin
+		existance = (select count(*) from produkty where kod = produkty.kod_kreskowy);
+		if existance = 0
+		then raise exception 'Product does not exist!';
+		end if;
+
+		update kartoteka_towaru kt
+			set data_do = (
+					select now()
+				) where kt.kod_kreskowy = kod and data_do is null;
+
+		insert into kartoteka_towaru(kod_kreskowy, cena_zakupu_netto, cena_sprzedazy_netto, vat) values
+			(kod, buy_price, sell_pirce, vat);
+	end
+$$ language plpgsql;
 --test	
 --CREATE or REPLACE function order()
 --VIEWS
