@@ -1,6 +1,12 @@
+package UserCommunication;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Scanner;
+
+import Services.AccountsService;
+import Services.DelieveryService;
+import Services.OrdersService;
+import Services.Payments;
 
 
 public class UserCommunicator implements Runnable {
@@ -19,16 +25,19 @@ public class UserCommunicator implements Runnable {
 	private static final String PROVIDERS = "dostawcy";
 	private static final String DLIEVERY = "dostawa";
 	private static final String ADD = "dodaj";
+	private static final String ACCOUNT = "konto";
 	
 	private OrdersService ordersService;
 	private Payments payments;
 	private DelieveryService delieveries;
+	private AccountsService accounts;
 	
 	public UserCommunicator(Connection connection){
 		this.connection = connection;
 		ordersService = new OrdersService(connection);
 		payments = new Payments(connection);
 		delieveries = new DelieveryService(connection);
+		accounts = new AccountsService(connection);
 	}
 	
 	@Override
@@ -79,11 +88,28 @@ public class UserCommunicator implements Runnable {
 		case DLIEVERY:
 			operateOnDelieveries(request, inputScanner);
 			break;
+		case ACCOUNT:
+			accountOperations(request, inputScanner);
+			break;
 		case EXIT:
 			exit();
 			return;
 		}
 	}
+	
+	public void accountOperations(String[] request, Scanner inputScanner) throws SQLException{
+		if(request.length == 1) {
+			accounts.selectAccounts();
+			return;
+		}
+		
+		switch(request[1]){
+		case ADD:
+			accounts.addAccountFromConsole(inputScanner);
+			break;
+		}
+	}
+	
 	public void operateOnDelieveries(String[] request, Scanner inputScanner){
 		if(request.length == 1){
 			//todo
