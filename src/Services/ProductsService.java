@@ -86,8 +86,4 @@ public class ProductsService {
 			e.printStackTrace();
 		}
 	}
-	
-	public void removeProduct(){
-		
-	}
 }

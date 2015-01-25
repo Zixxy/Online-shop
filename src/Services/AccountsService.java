@@ -21,6 +21,17 @@ public class AccountsService {
 		return DBCommunicator.readTable(table, 4);	
 	}
 	
+	public void deleteAccount(String login){
+		int deletions;
+		try {
+			deletions = DBCommunicator.executeUpdate(connection, "delete from konta_uzytkownicy where login = '" + login + "'");
+			System.out.println("Number deletions: " + deletions);
+		} catch (SQLException e) {
+			System.out.println("Error.");
+			e.printStackTrace();
+		}
+	}
+	
 	public void addAccountFromConsole(Scanner inputScanner){
 		StringBuilder addQuery = new StringBuilder();
 		addQuery.append("insert into konta_uzytkownicy values('");

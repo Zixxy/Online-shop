@@ -29,7 +29,7 @@ CREATE TABLE adresy (
 
 CREATE TABLE zamowienia ( 
 	id_zamowienia        serial  NOT NULL ,
-	login_klienta        varchar(20)  NOT NULL,
+	login_klienta        varchar(20), --jesli uzytkownik zostal usuniety a mimo to chcemy pamietac zamowienia.
 	data_zlozenia        date  NOT NULL DEFAULT NOW(),
 	adres    			 int  NOT NULL,
 	stan_realizacji		 realization_state NOT NULL,
@@ -208,6 +208,17 @@ $insert_invoice$ language plpgsql;
 CREATE TRIGGER insert_faktury_sprzedazy BEFORE INSERT OR UPDATE ON faktury_sprzedazy
 FOR EACH ROW EXECUTE PROCEDURE insert_invoice(); --każdy kolejny numer faktury jest o 1 większy niż poprzedni. Co roku licznik zerujemy i na nowo numerujemy od 1.
 
+
+CREATE OR REPLACE function delete_account() returns trigger as $delete_account$
+	begin
+		update zamowienia set login_klienta = null where login_klienta = OLD.login;
+		delete from adresy where login_użytkownika = OLD.login;
+		return OLD;
+	end
+$delete_account$ language plpgsql;
+
+CREATE TRIGGER remove_account BEFORE DELETE ON konta_uzytkownicy
+FOR EACH ROW EXECUTE PROCEDURE delete_account();
 --functions
 
 

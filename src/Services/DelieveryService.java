@@ -99,4 +99,14 @@ public class DelieveryService {
 		//todo
 		return null;
 	}
+	
+	public void deleteProvider(String nip){
+		try {
+			int result = DBCommunicator.executeUpdate(connection, "delete from dostawcy where nip = '"+ nip +"';");
+			System.out.println("Number deleted: " + result);
+		} catch (SQLException e) {
+			System.out.println("Wrong input.");
+			e.printStackTrace();
+		}
+	}
 }

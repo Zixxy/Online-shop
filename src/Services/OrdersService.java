@@ -31,7 +31,7 @@ public class OrdersService {
 
 	public String selectUnrealizedOrders() throws SQLException{
 		ResultSet table = DBCommunicator.executeQuery(connection, 
-				"select * from zamowienia where zrealizowane = false;");
+				"select * from zamowienia where stan_realizacji = 'oczekuje';");
 		if (!table.isBeforeFirst() ) {    
 			System.err.println("No data"); 
 			return null;
