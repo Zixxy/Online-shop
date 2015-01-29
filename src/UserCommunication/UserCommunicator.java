@@ -28,6 +28,7 @@ import Services.ProductsService;
  * "zamowienia detale [numer]" wypisuje detale konretnego zamowienia.
  * "zamowienia zamowione_produkty [numer]" wypisuje zamowione produkty w konretnym zamowieniu.
  * "zamowienia zrealizuj [numer] [forma platnosci]" podejmuje próbę zrealizowania zamówienia o konkretnym numerze z podaną formą płatności.
+ * "zamowienia dodaj "dodaje zamowienie dla pewnego uzytkownika. Przy wprowadzaniu danych prowadzi nas odpowiedni program.
  * 
  * * produkty:
  * komendy:
@@ -54,7 +55,6 @@ import Services.ProductsService;
  * komendy:
  * "konta" wyświetla dane wszystkich kont w bazie danych.
  * "konta dodaj" dodaje nowe kotno, prowadzi nas odpowiedni program.
- * "konta usun [login]" usuwamy konto o zadanym loginie.
  * 
  * komenda
  * "exit" uprzejmie kończy pracę programu.
@@ -134,7 +134,7 @@ public class UserCommunicator implements Runnable {
 		String[] request = line.split(" ");
 		switch(request[0]){
 		case ORDER:
-			executeOrder(request);
+			executeOrder(request, inputScanner);
 			break;
 		case PAYMENTS:
 			executePayment(request);
@@ -222,7 +222,7 @@ public class UserCommunicator implements Runnable {
 		}
 	}
 
-	public void executeOrder(String[] request) throws SQLException{
+	public void executeOrder(String[] request, Scanner inputScanner) throws SQLException{
 		if(request.length == 1){
 			System.out.println(ordersService.selectOrders());
 			return;
@@ -245,6 +245,9 @@ public class UserCommunicator implements Runnable {
 				e.printStackTrace();
 				System.out.println("Error.");
 			}
+			break;
+		case ADD:
+			ordersService.addOrder(inputScanner);
 			break;
 		default:
 				System.out.println("Wrong query.");

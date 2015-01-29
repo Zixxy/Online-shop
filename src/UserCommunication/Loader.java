@@ -16,12 +16,9 @@ public class Loader {
 	private Connection connection;
 	
 	public Loader() throws SQLException{
-		System.out.println("-------- PostgreSQL "
-				+ "JDBC Connection Testing ------------");
-
-		PreparedStatement preparedStatement;
-		ResultSet result;
 		connection = DriverManager.getConnection(URL,USER,PASS);
+		System.out.println("-------- PostgreSQL "
+				+ "JDBC Connection Established ------------");
 	}
 	
 	public void finalize(){

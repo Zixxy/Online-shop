@@ -79,11 +79,12 @@ public class ProductsService {
 		update.append(inputScanner.nextLine()+"); ");
 		
 		try {
-			DBCommunicator.executeUpdate(connection, update.toString());
+			DBCommunicator.executeQuery(connection, update.toString());
 			System.out.println("Ok.");
 		} catch (SQLException e) {
-			System.out.println("Error.");
-			e.printStackTrace();
+			System.out.println("Error. \n"
+					+ "Uwaga! Nie można tego samego dnia ustalać cenę produktu więcej niż raz.");
+			//e.printStackTrace();
 		}
 	}
 }
