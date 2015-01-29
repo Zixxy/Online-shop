@@ -207,18 +207,6 @@ $insert_invoice$ language plpgsql;
 
 CREATE TRIGGER insert_faktury_sprzedazy BEFORE INSERT OR UPDATE ON faktury_sprzedazy
 FOR EACH ROW EXECUTE PROCEDURE insert_invoice(); --każdy kolejny numer faktury jest o 1 większy niż poprzedni. Co roku licznik zerujemy i na nowo numerujemy od 1.
-
-
-CREATE OR REPLACE function delete_account() returns trigger as $delete_account$
-	begin
-		update zamowienia set login_klienta = null where login_klienta = OLD.login;
-		delete from adresy where login_użytkownika = OLD.login;
-		return OLD;
-	end
-$delete_account$ language plpgsql;
-
-CREATE TRIGGER remove_account BEFORE DELETE ON konta_uzytkownicy
-FOR EACH ROW EXECUTE PROCEDURE delete_account();
 --functions
 
 
@@ -255,7 +243,7 @@ $$
 	where zamowienia.id_zamowienia = $1;
 $$ language sql;
 
-
+--select * from zamowienia z join konta_uzytkownicy k on z.login_klienta = k.login; 
 CREATE or replace function order_details(int) returns table(
 	imie varchar, nazwisko varchar, ulica varchar, miejscowosc varchar, 
 	numer_domu varchar, kod_pocztowy char(6), data_zlozenia date,
@@ -471,3 +459,6 @@ from produkty p
 join kartoteka_towaru kt
 on p.kod_kreskowy = kt.kod_kreskowy
 and kt.data_do is null;
+
+
+

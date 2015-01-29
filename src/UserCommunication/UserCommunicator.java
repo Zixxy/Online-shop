@@ -180,9 +180,6 @@ public class UserCommunicator implements Runnable {
 		case ADD:
 			accounts.addAccountFromConsole(inputScanner);
 			break;
-		case DELETE:
-			accounts.deleteAccount(request[2]);
-			break;
 		}
 	}
 	
