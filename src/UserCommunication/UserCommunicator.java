@@ -38,7 +38,7 @@ import Services.ProductsService;
  * 
  * platnosci:
  * komendy:
- * "platnosci" wypisuje wszystkie płatności.
+ * "platnosci" wypisuje wszystkie zalegające płatności.
  * "platnosci zaplac [numer]" realizujemy konkretną płatność.
  * 
  * dostawcy:

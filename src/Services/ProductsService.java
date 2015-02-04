@@ -13,6 +13,7 @@ public class ProductsService {
 	}
 	
 	public String selectProductsCurrentState() throws SQLException{
+		System.out.println("kod kreskowy | nazwa | ilość na stanie | kategoria | opis produktu | data (od) obowiazywania ceny | cena netto | cena brutto | vat");
 		ResultSet table = DBCommunicator.executeQuery(connection, "select * from product_current_state;");
 		if (!table.isBeforeFirst() ) {    
 			System.err.println("No data"); 

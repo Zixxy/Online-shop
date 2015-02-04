@@ -22,6 +22,7 @@ public class OrdersService {
 	
 	
 	public String selectOrders() throws SQLException{
+		System.out.println("id zamowienia | login | data zlozenia | identyfikator adresu | stan realizacji ");
 		ResultSet table = DBCommunicator.executeQuery(connection, "select * from zamowienia;");
 		if (!table.isBeforeFirst() ) {    
 			System.err.println("No data"); 
@@ -31,6 +32,7 @@ public class OrdersService {
 	}
 
 	public String selectUnrealizedOrders() throws SQLException{
+		System.out.println("id zamowienia | login | data zlozenia | identyfikator adresu | stan realizacji ");
 		ResultSet table = DBCommunicator.executeQuery(connection, 
 				"select * from zamowienia where stan_realizacji = 'oczekuje';");
 		if (!table.isBeforeFirst() ) {    
@@ -41,6 +43,8 @@ public class OrdersService {
 	}
 
 	public String selectOrderDetails(int order) throws SQLException {
+		System.out.println("Detale: \n"
+				+ "(imie, nazwisko, miasto, ulica, numer domu, kod pocztowy, data złożenia, stan realizacji, wartość netto, wartość brutto)");
 		ResultSet table = DBCommunicator.executeQuery(connection, 
 				"select * from order_details("+Integer.toString(order)+");");
 		if (!table.isBeforeFirst() ) {    
@@ -51,6 +55,7 @@ public class OrdersService {
 	}
 	
 	public String selectOrderedProducts(int order) throws SQLException {
+		System.out.println("nazwa | kategoria | ilość | cena netto | cena brutto | vat (%) ");
 		ResultSet table = DBCommunicator.executeQuery(connection, 
 				"select * from ordered_products("+Integer.toString(order)+");");
 		if (!table.isBeforeFirst() ) {    

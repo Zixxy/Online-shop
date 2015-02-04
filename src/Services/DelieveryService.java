@@ -70,9 +70,9 @@ public class DelieveryService {
 	public void addProviderFromConsole(Scanner inputScanner){
 		System.out.println("nazwa przedsiębiorstwa: ");
 		String company = inputScanner.nextLine();
-		System.out.println("nip: ");
+		System.out.println("nip(musi być 10 cyfr): ");
 		String nip = inputScanner.nextLine();
-		System.out.println("numer konta: ");
+		System.out.println("numer konta(musi być 26 cyfr): ");
 		String accountNumber = inputScanner.nextLine();
 		System.out.println("parametry dostawcy: ");
 		String parameters = inputScanner.nextLine();
@@ -87,6 +87,7 @@ public class DelieveryService {
 	}
 
 	public String selectProviders() throws SQLException{
+		System.out.println("nazwa dostawcy | nip | numer konta | parametry dostawcy ");
 		ResultSet table = DBCommunicator.executeQuery(connection, "select * from dostawcy;");
 		if (!table.isBeforeFirst() ) {    
 			System.err.println("No data"); 

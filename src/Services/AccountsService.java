@@ -13,6 +13,7 @@ public class AccountsService {
 	}
 	
 	public String selectAccounts() throws SQLException{
+		System.out.println("login | haslo | imie | nazwisko ");
 		ResultSet table = DBCommunicator.executeQuery(connection, "select * from konta_uzytkownicy;");
 		if (!table.isBeforeFirst() ) {    
 			System.err.println("No data"); 

@@ -229,7 +229,7 @@ $$
 		produkty.kategoria, 
 		zamowienia_produkty.ilosc,
 		kartoteka_towaru.cena_sprzedazy_netto,
-		kartoteka_towaru.cena_sprzedazy_netto*(100+vat::numeric(8,2)) as cena_sprzedazy_brutto,
+		(kartoteka_towaru.cena_sprzedazy_netto*(100+vat::numeric(8,2)) * 0.01) as cena_sprzedazy_brutto,
 		kartoteka_towaru.vat as "vat"
 	from zamowienia
 	join zamowienia_produkty
